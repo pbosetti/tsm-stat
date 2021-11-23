@@ -1,0 +1,192 @@
+---
+title: "RStudio Intro"
+author: "Paolo Bosetti"
+date: "11/23/2021"
+output:
+  beamer_presentation: 
+    incremental: no
+    theme: AnnArbor
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Contenuti del corso
+
+## Contenuti
+* L'ambiente RStudio
+* Il linguaggio R
+* Statistica descrittiva
+* Statistica inferenziale
+* Modelli di regressione lineare e lineare generalizzata
+* Serie temporali e modelli ARIMA
+
+## Note
+* Queste slide coprono solo la parte introduttiva
+* Il resto è disponibile come notebook
+
+*Questa presentazione è realizzata in RStudio e sarà disponibile con il resto del materiale su github: <https://github.com/pbosetti/tsm-stat>.*
+
+
+# L'ambiente RStudio
+
+## Ambiente
+* Installazione: [prima R](http://www.r-project.org), [poi RStudio](http://rstudio.com)
+* RStudio lavora su cartelle o (meglio) **progetti** (`.Rproj`)
+* Un progetto contiene anche impostazioni specifiche e comuni ai file nella cartella
+* Una **sessione** di RStudio può operare sun un unico progetto
+* Si possono aprire più sessioni contemporaneamente
+
+## Attività
+* Editing di script `.R` e notebook `.Rmd`
+* Esecuzione del codice e gestione dell'ambiente dati
+* Plotting
+* Gestione file di progetto
+* Generazione di report (in \LaTeX, HTML, RTF, ...)
+* Tracciamento del codice (Git)
+* Gestione delle librerie (estensioni di linguaggio)
+
+# Il linguaggio R
+* R è un linguaggio ad alto livello, declarativo, interpretato, a sintassi C-like
+* R è sia un linguaggio, sia un interprete
+* R è un *dynamically typed language*
+* R è nato come versione GNU open source di S, un linguaggio proprietario per analisi statistiche
+* RStudio è una IDE proprietaria (ma free) per R
+
+# Il linguaggio R
+## Assegnazioni
+```{r}
+a <- 1
+# ma anche
+b = 2
+# tuttavia si preferisce la notazione a freccia, 
+# perché funziona anche così:
+3 -> c
+# per visualizzare il valore di una variabile:
+c
+# in un colpo solo:
+(d <- "stringa")
+```
+
+# Il linguaggio R
+## Array
+```{r}
+# Si costruiscono con l'operatore c():
+v1 <- c(10, 2, 7.5, 3)
+# oppure con una sequenza:
+v2 <- 1:10
+# anche con passo specificato:
+v3 <- seq(1, 10, 0.5)
+# Le funzioni si chiamano con le parentesi tonde, 
+# separando argomenti con ,
+```
+
+# Il linguaggio R
+## Matrici
+```{r}
+# Si costruiscono con l'operatore matrix()
+(m1 <- matrix(1:10, 2, 5))
+```
+
+
+# Il linguaggio R
+## Operatori
+```{r}
+# Le variabili sono nativamente degli array.
+# Gli scalari sono solo array di dimensione 1
+length(a)
+length(v1)
+# Gli operatori agiscono quindi sempre su array:
+a * 2
+v3 + 2
+```
+
+# Il linguaggio R
+## Indicizzazione
+* La sintassi di indicizzazione di R è molto flessibile e potente
+* si usano sempre le parentesi quadre `[r,c]`, la **base è 1**
+* se un indice manca, significa "tutte le righe|colonne"
+```{r}
+v1[3]
+m1[1,1]
+m1[2,]
+m1[,]
+```
+
+# Il linguaggio R
+## Indicizzazione
+* Un indice può essere anche un'array di posizioni o un'array di valori booleani
+
+```{r}
+v1[c(2,4,1)]
+v2[v2 %% 2 == 0]
+v2 %% 2 == 0 # operatore modulo (resto)
+```
+
+## Nota
+* `TRUE` e `FALSE` possono essere abbreviati in `T` e `F`
+
+# Il linguaggio R
+## Funzioni
+* Le funzioni sono *first class objects*, cioè sono variabili come altre
+* possono essere assegnate a variabili e passate a funzioni
+```{r}
+my_fun <- function(x) x^2
+my_fun(1:5)
+your_fun <- my_fun
+your_fun(6)
+my_apply <- function(x, f) f(x)
+my_apply(10, my_fun)
+```
+
+# Il linguaggio R
+## Funzioni
+* Se la definizione richiede più righe, si usa un **blocco** tra `{}`
+* Ogni funzione ritorna **sempre** l'ultima espressione valutata
+* Oppure esplicitamente mediante `return()`
+
+## Controllo di flusso
+* `if(cond) expr`
+* `if(cond) cons.expr  else  alt.expr`
+* `for(var in seq) expr`
+* `while(cond) expr`
+* `repeat expr`
+* `break`
+* `next`
+
+# Il linguaggio R
+## Argomenti delle funzioni
+* Gli argomenti possono essere indicati per posizione o per nome
+* Gli argomenti nominati possono comparire in qualsiasi ordine
+* Gli argomenti possono avere un default, in tal caso sono opzionali
+```{r}
+f <- function(x, y, n=10, test=F) { 
+  ifelse(test, 0, x^y + n)
+}
+f(2, 10)
+f(test=F, y=10, x=2)
+f(test=T)
+```
+
+# Il linguaggio R
+## Dataframe
+* In R più che matrici si usano `dataframe`
+* Si tratta di tabelle organizzate per colonne, internamente omogenee ma potenzialmente di tipi differenti
+```{r}
+df <- data.frame(A=1:10, B=letters[1:10])
+head(df)
+```
+
+# Il linguaggio R
+## Dataframe
+* Un dataframe può essere indicizzato come una matrice (due indici)
+* Oppure selezionando una colonna con la notazione `$`
+```{r}
+df[2,2]
+df$B[2]
+# anche in assegnazione
+df$C <- LETTERS[1:10]
+head(df, 3)
+```
+
