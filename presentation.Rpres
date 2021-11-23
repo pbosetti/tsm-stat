@@ -1,0 +1,41 @@
+Introduzione a R e RStudio
+========================================================
+author: Paolo Bosetti
+date: Dicembre 2021
+autosize: true
+
+Per Trento School of Management
+
+![TSM](https://www.tsm.tn.it/fileadmin/2019/templates/images/logo-scritta-r-w.svg)
+
+Contenuti del corso
+========================================================
+
+- L'ambiente RStudio
+- Il linguaggio R
+- Statistica descrittiva
+- Statistica inferenziale
+- Modelli di regressione lineare e lineare generalizzata
+- Serie temporali e modelli ARIMA
+
+*Questa presentazione è realizzata in RStudio e sarà disponibile con il resto del materiale su github: <https://support.rstudio.com/hc/en-us/articles/200486468>.*
+
+
+Slide With Code
+========================================================
+
+```{r}
+summary(cars)
+```
+
+Slide With Plot
+========================================================
+title: true
+
+```{r}
+plot(cars)
+```
+***
+```{r}
+plot(cars, typ="b")
+```

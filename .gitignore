@@ -1,4 +1,14 @@
+# R related
 .Rproj.user
 .Rhistory
 .RData
 .Ruserdata
+
+# Generated
+*-figure
+*.md
+!README.*
+
+# Personal
+*.webloc
+Personal
