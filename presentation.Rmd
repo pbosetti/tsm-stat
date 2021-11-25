@@ -19,15 +19,15 @@ knitr::opts_chunk$set(echo = TRUE, out.width="40%")
 # Contenuti del corso
 
 ## Contenuti
-* L'ambiente RStudio
-* Il linguaggio R
-* Statistica descrittiva
-* Statistica inferenziale
-* Modelli di regressione lineare e lineare generalizzata
-* Serie temporali e modelli ARIMA
+1. L'ambiente RStudio
+1. Il linguaggio R
+1. Statistica descrittiva
+1. Statistica inferenziale
+1. Modelli di regressione lineare e lineare generalizzata
+1. Serie temporali e modelli ARIMA
 
 ## Note
-* Queste slide coprono solo la parte introduttiva
+* Queste slide coprono solo la parte introduttiva (1.--4.)
 * Il resto è disponibile come notebook
 
 *Questa presentazione è realizzata in RStudio e sarà disponibile con il resto del materiale su github: <https://github.com/pbosetti/tsm-stat>.*
