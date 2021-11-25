@@ -4,12 +4,16 @@ author: "Paolo Bosetti"
 date: "11/23/2021"
 output:
   beamer_presentation: 
-    incremental: no
     theme: AnnArbor
+    fig_width: 6
+    fig_height: 3.5
+    fonttheme: structuresmallcapsserif
+    highlight: kate
+fontsize: 11pt
 ---
 
 ```{r setup, include=FALSE}
-knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_chunk$set(echo = TRUE, out.width="40%")
 ```
 
 # Contenuti del corso
@@ -188,5 +192,134 @@ df$B[2]
 # anche in assegnazione
 df$C <- LETTERS[1:10]
 head(df, 3)
+```
+# Statistica descrittiva
+## Plot
+* I principali comandi di plot sono:
+  - `plot`: interfaccia generica, accetta l'opzione `add=T`
+  - `lines`: plotta una serie come linea
+  - `points`: plotta una serie come punti
+  - `curve`: plotta una funzione di `x`, accetta l'opzione `add=T`
+  - `abline`: plotta una linea retta
+  - `hist`: istogramma
+  - `boxplot`: ditto
+
+# Statistica descrittiva
+## Stimatori
+* Media campionaria: `mean(x, na.rm=F)`
+* Varianza campionaria: `var(x, na.rm=F)`
+* Deviazione standard: `sd(x, na.rm=F)`
+* Mediana: `median(x, na.rm=F)`
+* Moda: `mode(x, na.rm=F)`
+* Covarianza: `cov(x, y, na.rm=F)`
+* Correlazione: `cor(x, y, na.rm=F)` $~=:\rm{cov}(x, y)/(\sigma_x\sigma_y)$
+
+# Statistica descrittiva
+## Distribuzioni
+* In R, le funzioni relative alle distribuzioni sono 4 per ciascuna distribuzione:
+  - generazione di numeri casuali, prefisso `r`
+  - densità di probabilità (PDF), prefisso `d`
+  - probabilità cumulata (CDF), prefisso `p`
+  - quantile (CDF$^{-1}$), prefisso `q`
+* Ai prefissi vanno aggiunti i nomi delle distribuzioni: `unif`, `norm`, `t`, `f`, `chisq`, `pois`, `binom`, `geom`, `gamma`, `weibull`, ...
+* Ad esempio:
+  - `rnorm(n, 0, 1)` genera `n` campioni normali standard $N(0,1)$
+  - `pt(t, n)` calcola la CDF del valore `t` da una distribuzione $t_n$
+  - `qf(p, n1, n2)` calcola il quantile per la probabilità `p` su una $\chi^2_{n_1,n_2}$
+  
+# Statistica descrittiva
+## Esempio
+```{r}
+plot(dgeom(1:20, 0.1), typ="h")
+curve(pnorm(x), xlim=c(-3, 3))
+```
+
+  
+# Statistica descrittiva
+## Esempio
+```{r}
+set.seed(1)
+x <- rnorm(100)
+m <- mean(x); s <- sd(x)
+hist(x, prob=T, ylim=c(0, 0.5), labels=T)
+curve(dnorm(x, mean=m, sd=s), xlim=c(-3, 3), add=T)
+```
+
+
+
+# Statistica inferenziale
+## Test di ipotesi
+* Un *test statistico* prevede sempre una coppia di ipotesi
+* L'ipotesi nulla $H_0$ è sempre l'ipotesi di non-significatività
+* L'ipotesi alternativa $H_1$ suppone che un effetto sia statisticamente significativo, cioè maggiore della varianza tipica del sistema
+\begin{eqnarray*}
+H_0: &&\mu_1 = \mu_2 \\
+H_1: &&\mu_1 \neq \mu_2
+\end{eqnarray*}
+
+## Matrice di confusione
+| $H_0$ | Accettata        | Rifiutata     |
+| ----- | ---------------- | ------------- |
+| Vera  | OK               | Errore Tipo I |
+| Falsa | Errore Tipo II   | OK            |
+
+# Statistica inferenziale
+## Probabilità di errore
+* $\alpha$ è la probabilità di rifiutare $H_0$ quando $H_0$ è vera (tipo-I)
+* $\beta$ è la probabilità di accettare $H_0$ quando $H_0$ è falsa (tipo-II)
+* $P=1-\beta$ è la **potenza** di un test
+
+## Se fosse un allarme anti-intrusione:
+* $\alpha$ è la probabilità di falso allarme
+* $\beta$ è la probabilità di un mancato allarme
+* $P$ è l'affidabilità del sistema (probabilità che suoni quando deve)
+
+# Statistica inferenziale
+## Esempio zero
+* Abbiamo due campioni $y_1$ e $y_2$ di $n_1$ e $n_2$ osservazioni
+* Le due medie campionarie $\bar y_1$ e $\bar y_2$ sono sufficientemente simili da chiederci se vengano dalla stessa popolazione o no
+* Nel primo caso, il valore atteso della popolazione del primo campione è uguale al valore atteso della popolazione del secondo: $H_0:~\mu_1=\mu_2$
+* Nel secondo caso invece $H_1:~\mu_1\neq\mu_2$
+* Questo problema corrisponde all'originale formulazione del test di Student di William Gosset, detto *Student*
+
+# Statistica inferenziale
+## Test di Student, o T-test
+* Risulta che:
+$$
+t_0 = \frac{\bar y_1 - \bar y_2}{S_p\sqrt{\frac{1}{n_1}+\frac{1}{n_2}}}\sim t_{n_1+n_2-1},~\text{dove }S_p = \frac{(n_1-1)S_1+(n_2-1)S_2}{n_1+n_2-2}
+$$
+* dato che conosciamo la distribuzione di $t_0$, possiamo calcolare la probabilità di riscontrare un valore uguale o superiore a $t_0$
+* tanto più bassa è tale probabilità, detta *p*-value, tanto più è forte $H_1$
+* il *p*-value corrisponde alla probabilità di un errore di tipo-I, $\alpha$
+
+# Statistica inferenziale
+## T-test in R
+```{r out.width="70%"}
+set.seed(123)
+y1 <- rnorm(10, 12, 0.5); y2 <- rnorm(12, 12.5, 0.7)
+boxplot(y1, y2, horizontal=T)
+```
+
+# Statistica inferenziale
+## T-test in R
+* per prima cosa si verifica l'**omoschedasticità**:
+```{r}
+(vt <- var.test(y1, y2))
+```
+
+# Statistica inferenziale
+## T-test in R
+* Poi si effettua il T-test appropriato:
+```{r}
+t.test(y1, y2, var.equal=(vt$p.value>0.05))
+```
+
+# Statistica inferenziale
+## Osservazione
+* In R, alcune funzioni possono ritornare degli *oggetti*
+* Un oggetto raggruppa uno o più *attributi*, visualizzabili col comando `names()` e accessibili con la notazione `$`:
+```{r}
+names(vt)
+vt$p.value
 ```
 
