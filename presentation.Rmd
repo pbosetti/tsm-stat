@@ -196,9 +196,9 @@ head(df, 3)
 # Statistica descrittiva
 ## Plot
 * I principali comandi di plot sono:
-  - `plot`: interfaccia generica, accetta l'opzione `add=T`
-  - `lines`: plotta una serie come linea
-  - `points`: plotta una serie come punti
+  - `plot`: interfaccia generica
+  - `lines`: plotta una serie come linea, accetta l'opzione `add=T`
+  - `points`: plotta una serie come punti, accetta l'opzione `add=T`
   - `curve`: plotta una funzione di `x`, accetta l'opzione `add=T`
   - `abline`: plotta una linea retta
   - `hist`: istogramma
@@ -243,6 +243,23 @@ x <- rnorm(100)
 m <- mean(x); s <- sd(x)
 hist(x, prob=T, ylim=c(0, 0.5), labels=T)
 curve(dnorm(x, mean=m, sd=s), xlim=c(-3, 3), add=T)
+```
+
+# Statistica descrittiva
+## Kernel density estimate (KDE)
+```{r, warning=FALSE}
+set.seed(123)
+x <- rnorm(100)
+hist(x, prob=T)
+rug(x, col="red")
+lines(density(x), col="blue")
+curve(dnorm(x), add=T, col="green")
+```
+
+# Statistica descrittiva
+## Kernel density estimate (KDE)
+```{r}
+plot(ecdf(x))
 ```
 
 
