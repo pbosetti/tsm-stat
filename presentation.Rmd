@@ -1,6 +1,6 @@
 ---
 title: "RStudio Intro"
-author: "Paolo Bosetti"
+author: "Paolo Bosetti (per TSM)"
 date: "11/23/2021"
 output:
   beamer_presentation: 
@@ -73,10 +73,42 @@ c
 (d <- "stringa")
 ```
 
+
 # Il linguaggio R
-## Array
+## Tipi, o classi native
+* R ha 6+1 tipi o *classi* native
+  * character: `"a"`, `"string"`, `'my text'`
+  * numeric: `1`, `3.1415`
+  * integer: `1L`
+  * logical: `TRUE`, `FALSE` (oppure `T` e `F`)
+  * complex: `1+4i`
+  * function: una *funzione*
+* Ogni istanza è intrinsecamente un vettore
+* Uno scalare è semplicemente un vettore di lunghezza 1
+
+# Il linguaggio R
+## Valori speciali
+* Sono definiti i seguenti valori speciali:
+  * `NA`: valore mancante
+  * `NULL`: niente
+  * `Inf`: Infinito
+  * `NaN`: Not a Number (esempio `0/0`)
+
+# Il linguaggio R
+## Coercizione
+* Quando si mescolano tipi differenti, ad es. in un vettore, R li trasforma in un tipo comune:
 ```{r}
-# Si costruiscono con l'operatore c():
+c(1L, 7, "2")
+c(T, 0)
+as.numeric(c("a", "1"))
+as.character(c(1, 1.7))
+```
+
+
+# Il linguaggio R
+## Vettori
+```{r}
+# Si costruiscono con l'operatore/funzione c():
 v1 <- c(10, 2, 7.5, 3)
 # oppure con una sequenza:
 v2 <- 1:10
@@ -87,21 +119,50 @@ v3 <- seq(1, 10, 0.5)
 ```
 
 # Il linguaggio R
+## Introspezione
+* Funzioni utili per ispezionare gli oggetti:
+  * `class()`: classe (alto livello) 
+  * `typeof()`: tipo (basso livello)
+  * `length()`: lunghezza vettore
+  * `attributes()`: metadati
+
+# Il linguaggio R
 ## Matrici
+* Si costruiscono con la funzione `matrix()`
 ```{r}
-# Si costruiscono con l'operatore matrix()
 (m1 <- matrix(1:10, 2, 5))
+```
+* la funzione `array()` costruisce matrici *n*-dimensionali
+
+# Il linguaggio R
+## Una matrice è un vettore con attributo `dim`
+```{r}
+attr(m1, "dim")
+v <- 1:4
+attr(v, "dim") <- c(2,2) # equivale a dim(m) <- c(2,2)
+v
+```
+
+# Il linguaggio R
+## Fattori
+* Una classe aggiuntiva (non base) ma molto comune è `factor`
+* Rappresenta variabili categoriche (ordinate o non)
+```{r}
+(vf <- factor(LETTERS[1:5], ordered=T))
+class(vf)
+typeof(vf)
+vf[1] < vf[3]
 ```
 
 
 # Il linguaggio R
-## Operatori
+## Vettori
 ```{r}
-# Le variabili sono nativamente degli array.
-# Gli scalari sono solo array di dimensione 1
+# Le variabili sono nativamente dei vettori.
+# Gli scalari sono solo vettori di dimensione 1
 length(a)
 length(v1)
-# Gli operatori agiscono quindi sempre su array:
+# le funzioni agiscono quindi sempre su vettori:
 a * 2
 v3 + 2
 ```
@@ -120,7 +181,7 @@ m1[,]
 
 # Il linguaggio R
 ## Indicizzazione
-* Un indice può essere anche un'array di posizioni o un'array di valori booleani
+* Un indice può essere anche un vettore di posizioni o un vettore di valori booleani
 
 ```{r}
 v1[c(2,4,1)]
@@ -143,6 +204,18 @@ your_fun(6)
 my_apply <- function(x, f) f(x)
 my_apply(10, my_fun)
 ```
+
+# Il linguaggio R
+## Funzioni freccia (*replacement functions*)
+* Abbiamo visto cose come `dim(v) <- c(2,3)`: come si dichiarano?
+```{r}
+`pwr<-` <- function(obj, value) obj ** value
+a <- 2
+pwr(a) <- 10
+a
+```
+* L'ultimo argomento **deve** chiamarsi `value` e rappresenta la rhs dell'assegnazione!
+
 
 # Il linguaggio R
 ## Funzioni
@@ -174,6 +247,17 @@ f(test=T)
 ```
 
 # Il linguaggio R
+## Differenza tra `<-` e `=`
+* L'operatore `=` è valido solo al *top-level*
+* L'operatore `<-` è valido ovunque, anche come argomento di funzione:
+```{r}
+system.time(m <- mean(1:1E6))
+m
+```
+
+
+
+# Il linguaggio R
 ## Dataframe
 * In R più che matrici si usano `dataframe`
 * Si tratta di tabelle organizzate per colonne, internamente omogenee ma potenzialmente di tipi differenti
@@ -193,6 +277,100 @@ df$B[2]
 df$C <- LETTERS[1:10]
 head(df, 3)
 ```
+# Il linguaggio R
+## Algoritmi di uso comune
+* Ordinamento: `sort`, `rev`, `order`
+* Campionamento: `sample`, `expand.grid`
+* Aggregazione: `by`, `aggregate`
+* Mappatura: `apply`, `lapply`, `sapply`
+* Tabelle di contingenza: `table`
+
+# Il linguaggio R
+## Ordinamento di vettori
+```{r}
+v <- runif(5, 1, 10)
+sort(v)
+rev(sort(v))
+sort(v, decreasing = T)
+```
+
+# Il linguaggio R
+## Ordinamento di dataframe
+```{r}
+df <- data.frame(A=1:5, B=runif(5))
+df[order(df$B),]
+```
+
+# Il linguaggio R
+## Campionamento
+```{r}
+sample(1:10) # con reinserimento
+sample(1:10, replace = T) # senza reinserimento
+sample(1:10, size = 5)
+sample(10) # generazione interi casuali senza rpetizione
+```
+
+# Il linguaggio R
+## Griglie
+```{r}
+(df <- expand.grid(A=1:2, B=c("-", "+")))
+```
+
+# Il linguaggio R
+## Aggregazione
+```{r}
+by(df$A, INDICES = df$B, FUN=sum)
+aggregate(A~B, data = df, FUN = sum)
+```
+
+# Il linguaggio R
+## Mappatura
+* `apply` applica una funzione ai margini di una matrice o array
+```{r}
+(m <- matrix(sample(6), 2, 3))
+apply(m, 1, sum)
+apply(m, 2, sum)
+```
+
+# Il linguaggio R
+## Mappatura
+* `lapply` applica una funzione agli elementi di un vettore e ritorna una lista
+```{r}
+v <- 1:10
+head(lapply(v, sqrt), n = 2)
+```
+
+# Il linguaggio R
+## Mappatura
+* `sapply` applica una funzione agli elementi di un vettore e ritorna un vettore
+```{r}
+v <- 1:5
+names(v) <- paste0("sqrt(",v,")")
+sapply(v, sqrt)
+```
+
+
+# Il linguaggio R
+## Tabelle di contingenza
+```{r}
+head(airquality, n = 3)
+with(airquality, table(OzHi = Ozone > 80, Month, 
+                       useNA = "ifany"))
+```
+
+# Il linguaggio R
+## Tabelle di contingenza
+* È anche utile `tapply()`:
+* **NOTA**: `with()` serve per risparmiarsi di scrivere `airquality$Ozone`.
+
+```{r}
+round(with(airquality, 
+           tapply(Ozone, Month, mean, na.rm=T)), 1)
+# O anche:
+aggregate(Ozone~Month, data=airquality, FUN=mean, ra.rm=T)
+```
+
+
 # Statistica descrittiva
 ## Plot
 * I principali comandi di plot sono:
