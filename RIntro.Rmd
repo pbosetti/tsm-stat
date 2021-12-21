@@ -19,11 +19,12 @@ library(purrr)
 ```
 
 ```{r include=FALSE}
-corso <- tribble(
-  ~argomento, ~ore, ~fonte,
+course <- tribble(
+  ~topic, ~hours, ~source,
   "Richiami di statistica", 5, "slide pdf",
   "L'ambiente RStudio", 1, knitr::current_input(),
-  "Il linguaggio R", 3, knitr::current_input(),
+  "Il linguaggio R", 1, knitr::current_input(),
+  "Statistica base in R", 2, "statistics.Rmd",
   "Modelli di regressione lineare e lineare generalizzata", 2, "reglin.Rmd",
   "Serie temporali e modelli ARIMA", 3, "ARIMA.Rmd",
   "*Tidyverse*", 4, "tidy.Rmd",
@@ -35,8 +36,8 @@ corso <- tribble(
 # Contenuti del corso
 ## Contenuti
 ```{r echo=FALSE, results='asis'}
-corso %>%pwalk(~cat(paste0("1. ",..1, ", ", ..2, "h *(", ..3, ")*" ), sep="\n"))
-cat("\n* **TOTALE: ", sum(corso$ore), "h**")
+course %>%pwalk(~cat(paste0("1. ",..1, ", ", ..2, "h *(", ..3, ")*" ), sep="\n"))
+cat("\n* **TOTALE: ", sum(course$hours), "h**")
 ```
 
 ## Note
@@ -45,6 +46,15 @@ cat("\n* **TOTALE: ", sum(corso$ore), "h**")
 
 *Questa presentazione è realizzata in RStudio e sarà disponibile con il resto del materiale su github: <https://github.com/pbosetti/tsm-stat>.*
 
+# Contenuti del corso
+## Link utili
+
+* [GNU-R: https://r-projct.org](https://r-projct.org)
+* [CRAN: https://cran.r-project.org](https://cran.r-project.org)
+* [RStudio: https://rstudio.com](https://rstudio.com)
+* [Tidyverse: https://tidyverse.org](https://tidyverse.org)
+* [Cheat sheet: https://rstudio.com/resources/cheatsheets/](https://rstudio.com/resources/cheatsheets/)
+* [Materiale corso: https://github.com/pbosetti/tsm-stat](https://github.com/pbosetti/tsm-stat)
 
 # L'ambiente RStudio
 

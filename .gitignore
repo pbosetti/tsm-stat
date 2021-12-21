@@ -7,8 +7,10 @@
 # Generated
 *-figure
 *.md
+*.nb.html
 !README.*
 
 # Personal
 *.webloc
 Personal
+
