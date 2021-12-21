@@ -12,22 +12,35 @@ output:
 fontsize: 11pt
 ---
 
-```{r setup, include=FALSE}
+```{r setup, include=FALSE, results='asis'}
 knitr::opts_chunk$set(echo = TRUE, out.width="40%")
+library(tibble)
+library(purrr)
 ```
 
-# Contenuti del corso
+```{r include=FALSE}
+corso <- tribble(
+  ~argomento, ~ore, ~fonte,
+  "Richiami di statistica", 5, "slide pdf",
+  "L'ambiente RStudio", 1, knitr::current_input(),
+  "Il linguaggio R", 3, knitr::current_input(),
+  "Modelli di regressione lineare e lineare generalizzata", 2, "reglin.Rmd",
+  "Serie temporali e modelli ARIMA", 3, "ARIMA.Rmd",
+  "*Tidyverse*", 4, "tidy.Rmd",
+  "Mappe e GIS", 3, "maps.Rmd"
+)
+```
 
+
+# Contenuti del corso
 ## Contenuti
-1. L'ambiente RStudio
-1. Il linguaggio R
-1. Statistica descrittiva
-1. Statistica inferenziale
-1. Modelli di regressione lineare e lineare generalizzata
-1. Serie temporali e modelli ARIMA
+```{r echo=FALSE, results='asis'}
+corso %>%pwalk(~cat(paste0("1. ",..1, ", ", ..2, "h *(", ..3, ")*" ), sep="\n"))
+cat("\n* **TOTALE: ", sum(corso$ore), "h**")
+```
 
 ## Note
-* Queste slide coprono solo la parte introduttiva (1.--4.)
+* Queste slide coprono solo la parte introduttiva ad R (2.--3.)
 * Il resto è disponibile come notebook
 
 *Questa presentazione è realizzata in RStudio e sarà disponibile con il resto del materiale su github: <https://github.com/pbosetti/tsm-stat>.*
@@ -39,7 +52,7 @@ knitr::opts_chunk$set(echo = TRUE, out.width="40%")
 * Installazione: [prima R](http://www.r-project.org), [poi RStudio](http://rstudio.com)
 * RStudio lavora su cartelle o (meglio) **progetti** (`.Rproj`)
 * Un progetto contiene anche impostazioni specifiche e comuni ai file nella cartella
-* Una **sessione** di RStudio può operare sun un unico progetto
+* Una **sessione** di RStudio può operare su un unico progetto
 * Si possono aprire più sessioni contemporaneamente
 
 ## Attività
@@ -370,6 +383,28 @@ round(with(airquality,
 aggregate(Ozone~Month, data=airquality, FUN=mean, ra.rm=T)
 ```
 
+# Il linguaggio R
+## Tidyverse
+Assieme a RStudio è emersa una *new wave* di librerie R che modificano radicalmente l'approccio. Vanno sotto il nome collettivo di [`tidyverse`](https://www.tidyverse.org)
+
+* `ggplot2`: grafici
+* `purrr`: programmazione funzionale
+* `dplyr`: manipolazione dati
+* `stringr`: manipolazione stringhe
+* `tibble`: data frame migliorati
+* `readr`: importazione dati
+* `tidyr`: preparazione dati
+* `lubridate`: manipolazione date
+
+# Il linguaggio R
+## Tidyverse
+L'approccio `tidyverse` ha alcune caratteristiche comuni:
+
+* dati in formato **tidy** (un'osservazione per riga, un osservando per colonna)
+* composizione di funzioni con `+` (`ggplot(...) + geom_line()`)
+* notazione prefissa con `%>%` (`a %>% str()` invece di `str(a)`)
+
+È utile consultare i cheat sheet: [https://www.rstudio.com/resources/cheatsheets/](https://www.rstudio.com/resources/cheatsheets/)
 
 # Statistica descrittiva
 ## Plot

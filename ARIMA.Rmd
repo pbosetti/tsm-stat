@@ -1,5 +1,6 @@
 ---
-title: "ARIMA"
+title: "Serie temporali e ARIMA"
+author: "Paolo Bosetti (per TSM)"
 output: 
   pdf_document: 
     toc: yes
@@ -136,7 +137,7 @@ Ora `cpmm` è un oggetto `xts`: la converisone di nuovo verso `ts` può essere f
 cpmm <- ts(coredata(cpmm), 
            start = decimal_date(index(cpmm)[1]),
            frequency = 365.25/7)
-plot(cpmm, ylab="Numero casi settimanali")
+ts.plot(cpmm, ylab="Numero casi settimanali")
 ```
 
 ## La classe `xts`
@@ -152,6 +153,11 @@ L'estrazione di sottoinsiemi (subsetting) viene effettuata, anziché con il meto
 
 ```{r}
 plot(cpmx["202108/2021-09-30"])
+# p1 <- autoplot(cpmx["202108/2021-09-30"]) + 
+#   geom_line() + 
+#   geom_area(fill="gray", alpha=1/3) + 
+#   geom_line(data=cpmx["2021-10-1/"], aes(x=Index, y=cpmx["2021-10-1/"]))
+# p1
 ```
 La data di inizio (prima di `/`) o di fine dell'intervallo (dopo la `/`) possono essere omesse, in tal caso significa "dall'inizio fino a ..." oppure "da ... fino alla fine". Inoltre, è possibile omettere componenti della data, intendendo così un intero sottoperiodo:
 
@@ -393,6 +399,9 @@ lines(fit$fitted, col="gray")
 plot(forecast(fit.auto, h=16))
 lines(temp.global.test, col="red")
 lines(fit$fitted, col="gray")
+
+## ggplot:
+# autoplot(forecast(fit, h=16)) + geom_line(aes(x=index(fit$x), y=fit$fitted), color="gray") + geom_line(aes(x=index(temp.global.test), y=temp.global.test), color="red") + ylab("Anomalia termica (°C)") + xlab("Anno")
 ```
 
 ### Esempio: Seasonal ARIMA (SARIMA)
