@@ -1,6 +1,9 @@
 ---
-title: "Statistica base"
-author: "Paolo Bosetti (per TSM)"
+title: |
+  ![](logo.png){height=0.5in} ![](logo-TSM.png){height=0.4in}
+  
+  Statistica base
+author: "Paolo Bosetti (`paolo.bosetti@unitn.it`)"
 output: 
   pdf_document: 
     toc: yes
@@ -15,7 +18,7 @@ output:
 ---
 
 ```{r, echo=FALSE}
-knitr::opts_chunk$set(fig.align="center", fig.dim=c(6, 4), out.width="4in")
+knitr::opts_chunk$set(fig.align="center", fig.dim=c(6, 4), out.width="3in")
 library(latex2exp)
 ```
 
@@ -221,7 +224,7 @@ quantile(v)
 
 Si noti la funzione `quantile()`: l'argomento opzionale `probs` è il vettore di probabilità per cui si vogliono i quantili (default a `seq(0, 1, 0.25)`).
 
-Purtroppo R non fornisce una funzione per calcolare la moda (cioè il valore più frequente). É però facile costruirla:
+Purtroppo R non fornisce una funzione per calcolare la moda (cioè il valore più frequente). È però facile costruirla:
 
 ```{r}
 set.seed(123)

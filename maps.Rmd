@@ -1,6 +1,9 @@
 ---
-title: "Mappe e GIS"
-author: "Paolo Bosetti (per TSM)"
+title: |
+  ![](logo.png){height=0.5in} ![](logo-TSM.png){height=0.4in}
+  
+  Mappe e GIS
+author: "Paolo Bosetti (`paolo.bosetti@unitn.it`)"
 output: 
   pdf_document: 
     toc: yes

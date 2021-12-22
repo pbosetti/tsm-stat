@@ -1,6 +1,9 @@
 ---
-title: "Regressione lineare e lineare generalizzata"
-author: "Paolo Bosetti (per TSM)"
+title:  |
+  ![](logo.png){height=0.5in} ![](logo-TSM.png){height=0.4in}
+  
+  Regressione lineare e lineare generalizzata
+author: "Paolo Bosetti (`paolo.bosetti@unitn.it`)"
 output: 
   pdf_document: 
     toc: yes
