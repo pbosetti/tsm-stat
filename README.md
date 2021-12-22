@@ -1,5 +1,3 @@
-![](logo.png){height=0.5in} ![](logo-TSM.png){height=0.4in}
-
 # Corso di R e RStudio per TSM
 
 Questa repo contiene la documentazione e il materiale sviluppato da Paolo Bosetti per il corso di R e RStudio organizzato per [Trento School of Management](http://www.tsm.tn.it) nel Gennaio del 2022.
