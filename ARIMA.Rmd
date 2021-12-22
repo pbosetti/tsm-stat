@@ -7,16 +7,16 @@ output:
     fig_caption: yes
     number_sections: yes
     highlight: pygments
-    fig_width: 5
-    fig_height: 4
     toc_depth: 4
+    extra_dependencies:
+      babel: ["italian"]
   documentclass: article
   classoption: a4paper
 ---
 
 ```{r include=FALSE}
 set.seed(123)
-knitr::opts_chunk$set(fig.align="center")
+knitr::opts_chunk$set(fig.align="center", fig.dim=c(6, 4), out.width="4in")
 rm(list=ls())
 library(lubridate)
 library(car)
