@@ -2,6 +2,8 @@
 title: |
   ![](logo.png){height=0.5in} ![](logo-TSM.png){height=0.4in}
   
+  --- Parte 1. ---
+  
   Statistica base con GNU-R
 author: "Paolo Bosetti (`paolo.bosetti@unitn.it`)"
 output: 
