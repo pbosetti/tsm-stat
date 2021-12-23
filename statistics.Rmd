@@ -18,7 +18,10 @@ output:
 ---
 
 ```{r, echo=FALSE}
-knitr::opts_chunk$set(fig.align="center", fig.dim=c(6, 4), out.width="3in")
+knitr::opts_chunk$set(
+  fig.align="center", 
+  fig.dim=c(7, 4), 
+  out.height="2in")
 library(latex2exp)
 ```
 
@@ -178,8 +181,8 @@ m <- t(sapply(n, function(x) round(qt(p, x, lower.tail=F), 3)))
 rownames(m) <- as.character(n)
 colnames(m) <- as.character(p)
 cat(file=file, "# Quantili della distribuzione T\nDoF ")
-write.table(m, "t_values.txt", quote = F, sep="\t", append=T)
-head(m)
+write.table(m, file, quote = F, sep="\t", append = TRUE)
+knitr::kable(head(m))
 ```
 
 Come si vede, `cat()` oltre che per stampare stringhe in standard output può essere utilizzato per scrivere su file: è sufficiente passare il parametro `file`.
@@ -202,6 +205,14 @@ La lettura da file di testo libero può essere effettuata medante la funzione `s
 df <- read.table("http://repos.dii.unitn.it:8080/data/diet.dat", header=T)
 str(df)
 ```
+
+Per comodità, visto che dalla stessa URI caricheremo altre risorse, ci definiamo una funzione di utilità:
+
+```{r}
+mydata <- function(file) paste0("http://repos.dii.unitn.it:8080/data/", file)
+df <- read.table(mydata("diet.dat"), header=T)
+```
+
 
 In particolare, l'opzione `header=T` specifica che i dati contengono i nomi delle colonne nella prima riga di intestazione.
 
@@ -332,7 +343,7 @@ qqline(vu, col="red")
 Nel caso di campioni bivariati o multivariati uno strumento molto utile per l'osservazione preliminare dei dati è il boxplot. Carichiamo i dati che riportano il tempo di reazione di un processo chimico in funzione di due diversi *trattamenti*, cioè condizioni di processo:
 
 ```{r}
-df <- read.table("http://repos.dii.unitn.it:8080/data/twosample.dat", header=T)
+df <- read.table(mydata("twosample.dat"), header=T)
 str(df)
 boxplot(yield~treat, data=df, horizontal=T)
 ```
@@ -495,7 +506,9 @@ abline(h=1-power.t.test(6, 2)$power, col="gray", lty=2)
 abline(h=0.2, col="gray", lty=2)
 ```
 
-Ad esempio, si capisce che con 6 osservazioni per campione è possibile discriminare una differenza relativa di 2 con una probabilità di falso negativo pari a `r round((1-power.t.test(6, 2)$power) * 100, 1)`%. Ma le curve possono essere usate anche per determinare la dimensione del campione: per discriminare una differenza relativa pari a 2 con una probabilità di falso negativo inferiore al 20% ho bisogno di almeno 6 osservazioni per campione.
+Ad esempio, si capisce che con 6 osservazioni per campione è possibile discriminare una differenza relativa di 2 con una probabilità di falso negativo pari a `r round((1-power.t.test(6, 2)$power) * 100, 1)`%. 
+
+Ma le curve possono essere usate anche per *determinare la dimensione del campione*: per discriminare una differenza relativa pari a 2 con una probabilità di falso negativo inferiore al 20% ho bisogno di almeno 6 osservazioni per campione.
 
 ## ANOVA a una via
 
@@ -512,7 +525,7 @@ Si noti che il test *non dice* quali delle coppie di trattamenti $(i,j)$ siano s
 Vediamo come efettuare ANOVA in R su un dataset che contiene i valori di resistenza a trazione di filati misti in funzione di differenti percentuali di fibre di cotone. Il trattamento, in questo caso, è la percentuale di fibre di cotone nel filato.
 
 ```{r}
-df <- read.table("http://repos.dii.unitn.it:8080/data/cotton.dat", header=T)
+df <- read.table(mydata("cotton.dat"), header=T)
 str(df)
 ```
 
@@ -592,7 +605,7 @@ plot(df.tuk)
 In particolare, le differenze a cui corrisponde un *p-value* minore del 5% sono:
 
 ```{r}
-df.tuk$Cotton[df.tuk$Cotton[,"p adj"] < 0.05,]
+knitr::kable(df.tuk$Cotton[df.tuk$Cotton[,"p adj"] < 0.05,])
 ```
 
 Le altre differenze sono invece **non significative**.
@@ -606,7 +619,7 @@ $$
 e la formula R corrispondente è `y~a+b+a:b`, dove `a:b` significa *interazione* tra fattori *a* e *b*; la sintassi algebrica delle formule in R definisce che `a*b==a+b+a:b`, quindi la formula può essere scritta più sinteticamente come `y~a*b`. Vediamo un esempio, caricando un data frame che contiene 
 
 ```{r}
-df <- read.table("http://repos.dii.unitn.it:8080/data/battery.dat", header=T)
+df <- read.table(mydata("battery.dat"), header=T)
 str(df)
 ```
 
@@ -630,9 +643,9 @@ with(df, interaction.plot(Temperature, Material, Response, typ="b", col=2:4))
 Rimane il dubbio di quali differenze di materiale siano significative alle varie temperature. Possiamo realizzare tre test di Tukey:
 
 ```{r}
-for (T in levels(df$Temperature)) {
-  cat(paste("Temperature: ", T, "°C", "\n"))
-  print(TukeyHSD(aov(Response~Material, data=df[df$Temperature==T,]))$Material)
+for (t in levels(df$Temperature)) {
+  cat(paste("Temperature: ", t, "°C", "\n"))
+  print(TukeyHSD(aov(Response~Material, data=df[df$Temperature==t,]))$Material)
   cat("\n")
 }
 ```
@@ -671,4 +684,219 @@ plot(df.lm$fitted.values, residuals(df.lm))
 Escludendo due soli punti estremi (che sono pochi), non si evidenziano particolari pattern quindi si accetta il modello.
 
 
-# Piani fattoriali
+# Piani fattoriali (DoE)
+
+Per brevità considereremo qui solo i casi di un piano fattoriale completo e di uno frazionato, entrambi non replicati. Casi più semplici (piani non frazionati) possono essere dedotti facilmente da questo caso più completo.
+
+Realizzare e analizzare un esperimento fatoriale richiede i seguenti passi:
+
+1. definizione dei *fattori* e dei loro livelli
+2. scelta del frazionamento e del numero di repliche
+3. generazione della *design matrix*, cioè della lista di combinazioni di livelli
+4. randomizzazione dell'ordine operativo
+5. esecuzione prove e raccolta dati
+6. ANOVA
+7. verifica di adeguatezza del modello (normalità e assenza di pattern nei residui)
+8. eventuale revisione del modello (Box-Cox)
+
+Questi punti saranno esplorati in dettaglio nei punti seguenti per due esempi: piano fattoriale completo e frazionato.
+
+## Caso 1: piano fattoriale completo
+
+### Definizione fattori
+
+Vogliamo studiare la velocità di trivellazione (Y) in funzione di alcuni parametri di processo (A--D):
+
+* A = carico assiale
+* B = portata fango di trivellazione
+* C = velocità di rotazione
+* D = tipo di fango di trivellazione
+* Y = velocità di trivellazione
+
+Di solito la scelta dei fattori è fatta in forma cautelativa: nel dubbio, ogni possibile parametro deve essere considerato come fattore.
+
+### Progettazione piano fattoriale
+
+Decidiamo di effettuare un piano fattoriale $2^4$ non replicato.
+Per ogni fattore individuiamo quindi due livelli, basso e alto, convenzionalmente indicati con `-` e `+`. Ovviamente, il *valore* di tali livelli dipende dal fattore (ad es. 400 N e 600 N per il carico assiale A, 100 rpm e 200 rpm per la velocità di rotazione C, ecc.).
+
+```{r}
+lvl <- c('-', '+')
+```
+
+### Design matrix
+
+La matrice di progetto deve contenere tutte le possibili combinazioni dei due livelli per ogni fattore. Secondo l'ordine standard, i livelli vengono alternati da - a + con frequenza massima per il primo fattore e via via dimezzando la frequenza. In R, questo tipo di data frame può essere agevolmente costruito con il comando `expand.grid()`:
+
+```{r}
+df <- expand.grid(A=lvl, B=lvl, C=lvl, D=lvl, Y=NA)
+knitr::kable(head(df))
+```
+
+### Randomizzazione
+
+È sempre necessario randomizzare la sequenza operativa in modo da distribuire omogeneamente effetti ignoti e incontrollati su tutti i fattori. Possiamo quindi aggiungere due colonne all'inizio del data frame con la sequenza standard e con la sequenza casualizzata:
+
+```{r}
+df <- data.frame(
+  StdOrder=seq_along(df$A),
+  RunOrder=sample(length(df$A)),
+  df
+)
+knitr::kable(head(df))
+```
+Ora il data frame può essere salvato su un file esterno da utilizzare come log per la raccolta dati, dopo averlo ordinato secondo il `RunOrder`:
+
+```{r, warning=FALSE}
+file <- "drill.txt"
+cat(c("# Trivelazione",
+      paste("# File creato il ", date()),
+      "# Fattori:",
+      "#   A = carico assiale, 40-60 N",
+      "#   B = portata fango di trivellazione, 30-50 l/min",
+      "#   C = velocità di rotazione, 100-200 rpm",
+      "#   D = tipo di fango di trivellazione, A-B",
+      "#   Y = velocità di trivellazione, m/min"),
+    file="drill.txt",
+    sep="\n")
+write.table(df[order(df$RunOrder),], "drill.txt", quote=F, append=T)
+```
+
+### Raccolta dati
+
+Il file ``r file`` completo dei dati `Y` viene poi caricato nuovamente in R, riordinando secondo l'ordine standard:
+
+```{r}
+df <- read.table(mydata(file), header=T, stringsAsFactors=T)
+df <- df[order(df$StdOrder),]
+```
+
+### ANOVA
+
+L'analisi comincia creando un modello lineare che comprenda tutti i fattori e tutte le possibili interazioni. Tale modello non può essere analizzato direttamente con ANOVA, dato che non avendo ripetizioni non consente di valutare la varianza:
+
+```{r}
+df.lm <- lm(Y~A*B*C*D, data=df)
+anova(df.lm)
+```
+
+È quindi necessario applicare il metodo di Daniel. La libreria `FrF2` mette a disposizione la funzione `DanielPlot()`:
+
+```{r, warning=FALSE}
+library(FrF2)
+DanielPlot(df.lm, alpha=0.1)
+```
+Dal grafico risulta che solo i fattori B, C e D sono significativi, con una confidenza del 10%. Possiamo quindi riformulare il modello considerando solo questi fattori e le loro interazioni e rimuovendo completamente il fattore A. In questo modo il piano fattoriale $2^4$ non ripetuto diventa un piano fattoriale $2\times 2^3$:
+
+```{r}
+df.lm2 <- lm(sqrt(Y)~B*C*D, data=df)
+anova(df.lm2)
+```
+
+Si confermano come significativo solo i fattori B, C e D e le interazioni tra B e C e tra B e D.
+
+### Verifica di adeguatezza
+
+Verifichiamo l'adeguatezza del modello con QQ-plot dei residui e un'analisi dei pattern:
+
+```{r, warning=FALSE}
+invisible(qqPlot(df.lm2))
+residualPlots(df.lm2)
+```
+
+Come si vede i punti 15 e 16 sono sospetti ma, soprattutto, c'è un'evidente differenza delle distribuzioni dei residui per vari livelli e un pattern in aumento verso i *fitted values*.
+
+### Revisione del modello
+
+È quindi opportuno cercare una trasformazione della resa Y che elimini questi problemi. Le trasformazioni possono essere individuate a mano, tentando varie combinazioni finché si trova quella che fornisce i residui migliori. Un metodo formale più comodo, invece, è il metodo Box-Cox, che individua il parametro di trasformazione $\lambda$ che minimizza gli scarti (o massimizza la cosiddetta *Log-likelihood*):
+
+```{r}
+library(MASS)
+boxcox(Y~B*C*D, data=df)
+```
+Nell'intervallo individuato tra le linee tratteggiate verticali e vicino all'ottimo ricadono sia il valore 0 (che corrisponde al logaritmo), sia il valore -1/2, cioè l'inverso della radice quadrata. Proviamo con quest'ultimo:
+
+```{r}
+df.lm3 <- lm(1/sqrt(Y)~B*C+D, data=df)
+anova(df.lm3)
+residualPlots(df.lm3, test=F)
+```
+
+Proviamo ora con il logaritmo:
+
+```{r}
+df.lm4 <- lm(log(Y)~B*C+D, data=df)
+anova(df.lm4)
+residualPlots(df.lm4, test=F)
+```
+
+Dei due, è forse preferibile l'inverso della radice quadrata, dato che ha distribuzioni dei residui più omogenee.
+
+Si accetta quindi il modello `1/sqrt(Y)~B*C+D`.
+
+## Caso 2: piano fattoriale frazionato
+
+In questo caso vogliamo analizzare la resa di un impianto di fabbricazione di circuiti integrati (fotolitografia) considerando i seguenti fattori:
+
+* A = apertura
+* B = tempo di esposizione
+* C = tempo di sviluppo
+* D = parametro di dimensione delle maschere
+* E = tempo di attacco
+* Y = risposta
+
+Progettiamo un piano fattoriale  $2^{5-1}_{IV}$ non replicato, con la relazione definente $I=ABCDE$. Dovremmo seguire i passi già visti al punto precedente, ma per brevità inseriamo direttamente i risultati nel data frame:
+
+```{r}
+lvl <- c(-1,1)
+df <- expand.grid(A=lvl, B=lvl, C=lvl, D=lvl) # E=ABCD
+attach(df)
+df$E <- A*B*C*D # E=ABCD
+detach(df)
+df$Y <- c(
+  8, 9, 34, 52,
+  16, 22, 45, 60,
+  6, 10, 30, 50,
+  15, 21, 44, 63
+)
+for (k in LETTERS[1:5]) df[k] <- factor(df[[k]])
+```
+
+Dato che il piano non è replicato dobbiamo applicare il metodo di Daniel:
+
+```{r}
+df.lm <- lm(Y~A*B*C*D*E, data=df)
+DanielPlot(df.lm, alpha=0.1)
+```
+
+Il modello ridotto può quindi essere `Y~A*B+C`. Per essere conservativi possiamo comunque usare `Y~A*B*C` e avere comunque abbastanza ridondanza da effettuare una ANOVA:
+
+```{r}
+df.lm <- lm(Y~A*B*C, data=df)
+anova(df.lm)
+```
+
+Si conferma quindi il modello `Y~A*B+C`.
+
+```{r}
+df.lm <- lm(Y~A*B+C, data=df)
+anova(df.lm)
+```
+
+Ora è necessario verificare l'adeguatezza:
+
+```{r}
+invisible(qqPlot(residuals(df.lm)))
+residualPlots(df.lm, test=F)
+```
+
+Non risultano particolari problemi quindi possiamo accettare il modello e studiare il processo con i grafici di interazione:
+
+```{r}
+attach(df)
+interaction.plot(A, B, Y, xlab="Apertura", ylab="Yield", trace.lab="Tempo di esposizione")
+interaction.plot(A, C, Y, xlab="Apertura", ylab="Yield", trace.lab="Tempo di sviluppo")
+interaction.plot(B, C, Y, xlab="Tempo di esposizione", ylab="Resa", trace.lab="Tempo di sviluppo")
+detach(df)
+```
+
