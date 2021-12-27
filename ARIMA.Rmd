@@ -197,7 +197,7 @@ Per questi motivi, si consiglia l'uso di `xts` per la gestione della serie tempo
 
 ## Verifiche iniziali
 
-La prima verifica è sempre quella sui dati mancanti. Eliminiamo qualche dato dalla serie `cpm`per vedere, in seguito, come gestre i dati mancanti:
+La prima verifica è sempre quella sui dati mancanti. Eliminiamo qualche dato dalla serie `cpm` per vedere, in seguito, come gestre i dati mancanti:
 
 ```{r}
 
@@ -213,7 +213,7 @@ for (i in nas) {
 }
 ```
 
-Prima di qualsiasi analisi su una serie temporale è utile visualizzare il cosiddetto **lag plot**, che è un particolare grafico a dispersione in cui si confrontano i dati di una serie con gli stessi dati con un certo ritardo: se il segnale è puramente casuale, il risultato sarà una nuvola dispersa; viceversa, ogni pattern significa che i dati sono affeti da un andamento regolare. Inoltre, nel nostro caso si nota che la dispersione è molto stretta al lag 7, il ché dimostra la regolarità settimanale della serie temporale.
+Prima di qualsiasi analisi su una serie temporale è utile visualizzare il cosiddetto **lag plot**, che è un particolare grafico a dispersione in cui si confrontano i dati di una serie con gli stessi dati con un certo ritardo: se il segnale è puramente casuale, il risultato sarà una nuvola dispersa; viceversa, ogni pattern significa che i dati sono affeti da un andamento regolare. Inoltre, nel nostro caso si nota che la dispersione è molto stretta al lag 7, il che dimostra la regolarità settimanale della serie temporale.
 
 ```{r}
 lag.plot(log(cpmx["2021-06/"]), lags=9)
@@ -431,6 +431,15 @@ ddlx <- diff(dlx, 12)
 plot.ts(cbind(x,lx,dlx, ddlx), main="")
 monthplot(ddlx)
 ```
+
+La stagionalità può essere analizzata anche con il metodo `stl()`:
+
+```{r}
+plot(stl(x, "periodic"))
+```
+
+Si noti che `stl(x, "periodic")` restituisce un oggetto `ts` multivariato, le cui colonne possono essere estratte, ad es., così: `plot(s$time.series[,"seasonal"])`.
+
 A questo punto studiamo l'autocorrelazione per identificare i parametri del modello SARIMA:
 
 ```{r}
@@ -465,31 +474,44 @@ plot(forecast(fit2, h=12))
 plot(forecast(fit3, h=12))
 ```
 
-# ARIMA simulation
+# Simulazione di processi ARIMA
 
-Processo autoregressivo $\mathrm{AR}(2)$:
+Per motivi di studio è spesso utile poter *simulare* un processo ARIMA. A questo scopo possiamo utilizzare la funzione `arima.sim()`, che genera una serie temporale a partire dai termini $p$, $d$, e $q$ del modello desiderato.
+
+Vediamo ad esempio un processo autoregressivo di tipo $\mathrm{AR}(1)$:
 
 ```{r}
 set.seed(123)
 tsdisplay(arima.sim(model=list(ar=c(0.9)), n=500))
 ```
 
-Processo a media mobile $\mathrm{MA}(2)$:
+Come si vede, la ACF degrada in maniera geometrica entre la PACF ha un brusco calo sotto la soglia di significatività a lag=1, indice appunto di un modello con $p=1$
+
+
+Simuliao invece un processo a media mobile $\mathrm{MA}(2)$:
 
 ```{r}
 set.seed(123)
 tsdisplay(arima.sim(model=list(ma=c(1.5, 0.75)), n=500))
 ```
 
-Combinati, $\mathrm{ARMA}(1,2)$:
+Questa volta è la PACF a diminuire geometricamente (seppure con segni alternati), mentre la ACF si smorza rapidamente dopo due lag, per cui si deduce $q=2$.
+
+Vediamo ora l'effetto combinato, $\mathrm{ARMA}(1,2)$, per cui ci aspettiamo $p=1$ e $q=2$:
 
 ```{r}
 set.seed(123)
-x <- arima.sim(model=list(ar=c(0.9), ma=c(0.7, 0.25)), n=1000)
+x <- arima.sim(model=list(ar=c(0.6, -0.2), ma=c(0.4)), n=1000)
 tsdisplay(x)
 ```
 
+Come si vede, quando entrambi i termini sono presenti i grafici ACF e PACF possono non essere facilmente interpretabili. In questo caso, ad esempio, saremmo portati a proporre un modello $\rm{ARMA}(3, 2)$. Per questo motivo è opportuno, partendo da questa ipotesi, vautare anche condizioni simili e scegliere quella con AIC minimo, che è appunto ciò che fa `auto.arima()`, di cui possiamo vedere il processo mediante il parametro `trace=T`:
 
+```{r}
+auto.arima(x, start.p=3, start.q=2, trace=T)
+```
+
+È possibile ovviamente generare una serie temporale con un parametro $d$ non nullo:
 
 ```{r}
 set.seed(123)
@@ -500,9 +522,10 @@ order <- c(length(ar), d, length(ma))
 s <- arima.sim(model=list(ar=ar, ma=ma, order=order), n=1000)
 tsdisplay(diff(s, differences = d))
 ```
+Anche in questo caso possiamo verificare il risultato:
 
 ```{r}
-auto.arima(s)
+auto.arima(s, start.p=3, start.q=2, trace=T)
 ```
 
 Il numero di differenziazioni necessarie per rendere la serie stazionaria può essere calcolato con `ndiffs()`:
@@ -511,26 +534,37 @@ Il numero di differenziazioni necessarie per rendere la serie stazionaria può e
 (d <- ndiffs(s))
 tsdisplay(diff(s, diff=d))
 ```
-Le funzioni di autocorelazione suggeriscono un modello $\mathrm{ARIMA}(3,1,2)$. Il modello ottimale dovrebbe avere quidi una combinzione di $p$ e $q$ inferiori a 3 e 2. Li proviamo tutti e selezioniamo quello con AIC minore:
+
+Se non volessimo utilizzare `auto.arima()`, potremmo verificare l'AIC di una combinazione di parametri esplorati a tappeto. Le funzioni di autocorelazione suggeriscono un modello $\mathrm{ARIMA}(3,1,2)$. Il modello ottimale dovrebbe avere quidi una combinzione di $p$ e $q$ inferiori a 3 e 2. Li proviamo tutti e selezioniamo quello con AIC minore:
 
 ```{r}
-g <- expand.grid(p=1:3, q=1:2)
-aic <- c()
+g <- expand.grid(p=1:3, q=1:2, drift=c(F, T), aic=NA)
 for (i in 1:dim(g)[1]) {
-  aic <- c(aic, arima(diff(s, diff=d), order=c(g$p[i], d, g$q[i])))$aic
+  g$aic[i] <- Arima(s, order=c(g$p[i], d, g$q[i]), include.drift=g$drift[i])$aic
 }
-g[which(aic == min(aic)),]
+g[which.min(g$aic),]
 ```
 
-
-
+Vediamo come si comporta `auto.arima()` su serie temporali generate in altro modo:
 
 ```{r}
 n <- 200
 t1 <- ts(0.5*rnorm(n), start=2020, frequency = 365.25)
 t2 <- ts(sin((1:n)*365.25/(12*n)), start=2020, frequency=365.25)
-tsdisplay(t1)
-tsdisplay(t2)
 tsdisplay(t1+t2)
+fit <- auto.arima(t1+t2)
 ```
 
+Possiamo visualizzare la *regressione*, ossia il termine `fit$fitted`:
+
+```{r}
+plot(t1+t2, col=1)
+lines(fit$fitted, col=2)
+legend("topright", legend=c("t1+t2", "ARIMA fit"), lty=1, col=1:2)
+```
+
+Infine, ricordiamo sempre di verificare la normalità dei residui:
+
+```{r}
+invisible(qqPlot(residuals(fit)))
+```
