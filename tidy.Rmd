@@ -2,10 +2,13 @@
 title: |
   ![](logo.png){height=0.5in} ![](logo-TSM.png){height=0.4in}
   
+  --- Parte 4. ---
+
   Tidyverse
 author: "Paolo Bosetti (`paolo.bosetti@unitn.it`)"
 output: 
   pdf_document: 
+    keep_tex: no
     toc: yes
     fig_caption: yes
     number_sections: yes
@@ -15,24 +18,453 @@ output:
       babel: ["italian"]
   documentclass: article
   classoption: a4paper
+header-includes:
+  - \usepackage{fancyhdr}
+  - \pagestyle{fancy}
+  - \fancyhead[CO,CE]{}
+  - \fancyfoot[CO,CE]{Corso di GNU-R e RStudio --- paolo.bosetti@unitn.it}
+  - \fancyfoot[LE,RO]{\thepage}
 ---
 
-```{r show=FALSE}
-knitr::opts_chunk$set(fig.align="center", fig.dim=c(6, 4), out.width="4in")
+```{r include=FALSE, show=FALSE}
+knitr::opts_chunk$set(
+  fig.align="center", 
+  fig.dim=c(8, 4), 
+  out.height="3in")
+library(tidyverse)
+library(ggthemes)
+library(xts)
+library(RColorBrewer)
+library(ggExtra)
+source("myfunctions.R")
 ```
 
+# Introduzione al Tidyverse
 
-This is an [R Markdown](http://rmarkdown.rstudio.com) Notebook. When you execute code within the notebook, the results appear beneath the code. 
+*Tidyverse* rappresenta una collezione di librerie nate attorno a RStudio (spesso dagli stessi sviluppatori), allo scopo di modernizzare R sia come linguaggio sia come potenzialità soprattutto nella creazione di grafici complessi e nella gestione di *big data*.
 
-Try executing this chunk by clicking the *Run* button within the chunk or by placing your cursor inside it and pressing *Cmd+Shift+Enter*. 
+Un elemento comune alle librerie Tidyverse è quello di sostituire funzioni nidificate, tipiche di R, con sequenze di operazioni: da `f(g(x))` a `g(x) %>% f()`. Lo scopo è generalmente rendere il codice più leggibile e flessibile.
+
+Questo nuovo approccio è reso possibile dal due caratteristiche di R:
+
+1. R è un linguaggio funzionale, in cui le funzioni sono *first class objects*;
+2. Le funzioni accettano parametri nominati in qualsiasi ordine, anonimi nell'ordine in cui sono definiti;
+3. Gli stessi operatori come `+`, `-`, ..., sono in realtà *funzioni* con due argomenti;
+4. Gli operatori possono essere *ridefiniti* per nuovi oggetti, ed è possibile definire *nuovi operatori* del tipo `%op%`, dove `op` può essere un qualsiasi insieme di caratteri.
+
+Grazie a queste caratteristiche, Tidyverse introduce la possibilità di accodare operazioni, avendo ridefinito l'operatore `+`, e di passare strutture dati mediante l'operatore `%>%` (*pipe*). In quest'ultimo caso un esempio è particolarmente efficace:
+```{r}
+set.seed(123)
+(x <- rnorm(10)) %>% mean %>% round(digits=2)
+```
+che è equivalente alla "vecchia" sintassi:
+```{r}
+set.seed(123)
+round(mean(x <- rnorm(10)), digits=2)
+```
+ma molto più leggibile.
+
+Nell'ultimo esempio, si noti che il vettore `x` **rimane invariato**, mentre se avessimo scritto `x <- rnorm(10) %>% mean %>% round(digits=2)`, allora `x` conterrebbe la media del vettore generato (che a sua volta andrebbe perso).
+
+In generale, tuttavia, la "nuova moda" non sostituisce completamente la vecchia, per alcuni motivi:
+
+* Tidyverse è comunque abbastanza pesante
+* se certe funzionalità (ad esempio il *pipe*) sostanzialmente non hanno svantaggi, altre vanno poco d'accordo con librerie e funzioni "vecchie", ed è soprattutto il caso dei grafici
+* in certi casi, ed è di nuovo il caso dei grafici, le vecchie funzioni sono semplicemente più concise e rapide, quindi preferibili se si generano grafici per analisi dati piuttosto che per la pubblicazione finale
+* spesso le funzioni grafiche sono molto potenti, ma tendono a nascondere all'utente i dettagli degli algoritmi utilizzati
+
+Le librerie che fanno parte di Tidyverse possono essere caricate individualmente oppure con un unica istruzione `library(tidyverse)`. Tuttavia, se se ne usa solo un limitato sottoinsieme spesso conviene caricarle individualmente.
+
+## Strutture dati
+
+Le librerie Tidyverse si aspettano i dati in formato *tidy*, cioè un'osservazione per riga, un osservando per colonna. I dati sono tipicamente contenuti in data frame o, preferibilmente, nella nuova classe `tibble`, che è per lo più interscambiabile con i data frame, dato che ne eredita la classe. Una `tibble` può essere creata convertendo un data frame, oppure passando i dati per colonne (come per la funzione `data.frame()`), oppure ancora passando i dati **per righe**, medante la funzione `tribble()` (notare la `r`, per *rows*):
 
 ```{r}
-plot(cars)
+n <- 10
+a <- data.frame(
+  In=1:n, 
+  Out=(1:n)^2 + rnorm(n, sd=1), 
+  Size=rnorm(n, 10, 0.1)) %>% 
+  tibble %>% 
+  print
+(b <- tribble(
+  ~name, ~age,
+  "Paolo", 50,
+  "Luca", 45,
+  "Lucia", 38,
+  "Anna", 52
+)) %>% knitr::kable()
 ```
 
-Add a new chunk by clicking the *Insert Chunk* button on the toolbar or by pressing *Cmd+Option+I*.
+Gli argomenti della funzione `tibble()` sono valutati in maniera *lazy*, cioè solo quando sono effettivamente utilizzati, a differenza che in `data.frame()`:
 
-When you save the notebook, an HTML file containing the code and output will be saved alongside it (click the *Preview* button or press *Cmd+Shift+K* to preview the HTML file). 
+```{r warning=FALSE}
+rm(x, y)
+try(
+  df <- data.frame(x=1:10, y=x^2)
+)
+tb <- tibble(x=1:5, y=x^2)
+tb
+```
 
-The preview shows you a rendered HTML copy of the contents of the editor. Consequently, unlike *Knit*, *Preview* does not run any R code chunks. Instead, the output of the chunk when it was last run in the editor is displayed.
+## Lettura e importazione dati
 
+La libreria `readr` mette a disposizione:
+
+* `read_csv()`/`read_csv2()`: comma separated (CSV) files
+* `read_tsv()`: tab separated files
+* `read_delim()`: general delimited files
+* `read_fwf()`: fixed width files
+* `read_table()`: tabular files where columns are separated by white-space.
+* `read_log()`: web log files
+
+Tutte queste funzioni restituiscono una `tibble`.
+
+```{r}
+stat <- read_csv2(mydata("censimento_TAA_2011.csv"))
+trace <- read_csv2(mydata("tracciato_2011_localita.csv"))
+```
+
+Ovviamente esistono anche le controparti `write_*()`, che accettano come primo argomento un data rame oppure una `tibble`. Generalmente queste funzioni sono molto più veloci delle controparti della libreria `base` (`write.*()`).
+
+
+## Manipolazione dati
+
+La libreria `dplyr` mette a disposizione un'ampia scelta di funzioni per la manipolazione di tabelle e `tibble`. In generale, queste funzioni semplificano e rendono più leggibili operazioni che sarebbero comunque realizzabili mediante approcci più standard, anche se con più passaggi e in maniera meno efficiente.
+
+Nella nomenclatura tidy, una `tibble` contiene una o più *variabili* (colonne), ciscuna con valori per uno o più *casi* (righe). Secondo questa convenzione, le principali funzioni di `dplyr` sono:
+
+* `mutate()` aggiunge nuove veriabili, funzione di variabili esistenti
+* `select()` seleziona variabili in base al oro nome
+* `filter()` seleziona casi in base al loro valore
+* `summarise()` riconduce più valori ad un unico indicatore
+* `arrange()` riordina i casi (righe)
+
+Vediamo esempi di filtraggio:
+
+```{r}
+starwars %>% 
+  filter(homeworld == "Naboo" & species== "Human")
+```
+
+Selezione:
+
+```{r}
+starwars %>% 
+  select(name, ends_with("color")) %>%
+  names
+```
+
+Modifica:
+
+```{r}
+starwars %>% 
+  filter(species == "Human") %>%
+  mutate(name, bmi = round(mass / ((height / 100)  ^ 2), 1)) %>%
+  select(name:mass, bmi) %>%
+  arrange(desc(bmi), )
+```
+Si noti che la variante `%<>%` dell'operatore pipe consente di fare una *modifica sul posto* di una tibble:
+
+```{r}
+library(magrittr)
+humans <- starwars %>% filter(species == "Human")
+humans %<>% mutate(name, bmi = round(mass / ((height / 100)  ^ 2), 1))
+humans
+```
+
+Talvolta i dati sono inclusi come *nomi di riga*. Ciò può avvenire solo se i dati sono originariamente in un data frame, dato che le `tibble` non supportano i nomi di riga:
+
+```{r}
+mtcars %>% row.names
+mtcars %>% mutate(
+  kpl=round(mpg*0.621371/3.78541, 1),
+  lp100k=round(100/kpl, 1)) %>% 
+  rownames_to_column(var="Model") %>%
+  head
+```
+
+La funzione `summarise()` è particolarmente utile assieme a `group_by()`:
+
+```{r}
+starwars %>%
+  group_by(species) %>%
+  summarise(
+    n = n(),
+    mass = round(mean(mass, na.rm=T), 1),
+    "max height" = max(height, na.rm=T),
+    "min height" = min(height, na.rm=T)
+  ) %>%
+  filter(
+    n > 1,
+    mass > 50
+  )
+```
+
+Sono infine particolarmente utili le funzioni per **combinare tabelle di dati** secondo il paradigma relazionale:
+
+```{r}
+persons <- tribble(
+  ~name, ~surname, ~role,
+  "Paolo", "Bosetti", 1,
+  "John", "Smith", 2,
+  "Phil", "Cameron", 1,
+  "Eddy", "Hunt", 3,
+  "Sebastian", "Hauer", 3
+)
+
+roles <- tribble(
+  ~id, ~role,
+  1, "attack",
+  2, "play",
+  3, "defense"
+)
+
+team <- left_join(persons, roles, by=c("role"="id"))
+team %>% filter(role.y=="attack")
+# Equivalente a:
+team[team$role.y=="attack",]
+```
+
+```{r}
+mtcars %>% mutate(
+  kpl=round(mpg*0.621371/3.78541, 1),
+  lp100k=round(100/kpl, 1)) %>% 
+  rownames_to_column(var="Model") %>%
+  head
+```
+
+## Grafici base
+
+Forse una delle innovazioni più importanti di Tidyverse è la nuova interfaccia di plotting, che è fornita dalla libreria `ggplot2`, dove la doppia `g` sta per *Grammar of Graphics*, secondo l'idea di comporre un grafico accostando funzioni secondo una grammatica base che consente di tenere separati i dati dagli algoritmi e dall'estetica.
+
+Una interessante caratteristica di `ggplot2` è che consente di adottare dei temi (personalizzabili) in modo da controllare l'aspetto estetico dei grafici realizzati. I temi vengono caricati così:
+```{r}
+theme_set(theme_bw())
+```
+
+Un GGPlot viene creato inizialmente con la funzione `ggplot()` che richiede la struttura dati (`tibble` o `dataframe`) e gli *aesthetics*, cioè un comando che specifica *cosa* deve essere visualizzato nel grafico (funzione `aes()`). Quest'unico comando tuttavia produce esclusivamente un grafico vuoto: per riempirlo è necessario aggiungere dei *layer*, **sommando** al `ggplot` opportuni comandi:
+
+```{r}
+ggplot(a, aes(In, Out)) + 
+  geom_smooth(formula = y~poly(x,2), method="lm") +
+  geom_point(aes(size=Size), color="blue") +
+  labs(title="Grafico di esempio", subtitle = "con GGPlot2") + 
+  xlab("Input") +
+  ylab("Output") +
+  labs(size="Dimensione")
+  
+```
+### Aesthetics
+
+È importante comprendere il ruolo degli *aesthetics*: essi definiscono quali *variabili* nei dati originali vengono mappati sui due assi e sui vari indicatori del grafico (colori, dimensioni, forma, riempimento, ecc.). A seconda dei casi `aes()` può essere indicata solo in `ggplot()` oppure anche nei comandi `geom_*()` successivi:
+
+```{r}
+gp <- diamonds %>% 
+  slice_sample(prop=0.2) %>%
+  ggplot(aes(x=carat, y=price, color=cut)) + 
+  geom_point(size=1/4) + 
+  geom_smooth()
+print(gp)
+```
+
+Come si vede, siccome l'estetica include i tre parametri, se non si specifica nessuna estetica per `geom_smooth()` essa viene applicata per ciascun raggruppamento previsto dall'estetica `color`. Se invece volessimo un'unica linea di tendenza dovremmo specificare un'estetica apposita e **separata** per `geom_point()` e per `geom_smooth()`:
+
+```{r}
+diamonds %>% 
+  slice_sample(prop=0.2) %>%
+  ggplot() + 
+  geom_point(aes(x=carat, y=price, color=cut), size=1/4) + 
+  geom_smooth(aes(x=carat, y=price))
+```
+Si noti l'uso della funzione `slice_sample()` (in `dplyr`) per estrarre a caso solo il 20% dei dati, in modo da velocizzare la creazione del grafico. 
+
+Le etichette di testo possono essere modificate con il *verbo* `labs()`:
+
+```{r}
+gp + labs(title="Diamanti!", x="Carati", y="Prezzo", color="Taglio")
+```
+
+### Facets
+
+Altri termini di raggruppamento possono essere inclusi variando ad esempio `size`, `shape`, `fill` dei punti del grafico, oppure creando matrici di grafici in cui le variabili da utilizzare sulle righe e sulle colonne della matrice vanno indicate mediante una *formula* di tipo `row ~ column`, omettendo eventualmente la prima o la seconda:
+
+```{r}
+gp + facet_wrap(~color)
+```
+
+```{r}
+gp + facet_grid(cut~color)
+```
+
+
+### Scale
+
+I verbi ggplot che cominciano con `scale_` possono essere utilizzati per manipolare le scale degli assi (sia gli assi $x$ e $y$ che gli assi virtuali). Ad esempio è possibile cambiare la spaziatura delle etichette degli assi (`scale_*_continuous(breaks=c(...))`) che il tipo di scala (`scale_*_log10()` piuttosto che `scale_*_reverse()`):
+
+```{r}
+gp + scale_x_continuous(breaks = seq(1, 3, 0.5)) +
+  scale_y_log10()
+```
+
+### Palette
+
+Un particolare tipo di scala è quella dei colori. Le palette di colori disponibili sono visualizzabili con il comando (libreria `RColorBrewer`): 
+
+```{r eval=FALSE, include=TRUE}
+display.brewer.all()
+```
+
+Ad esempio:
+
+```{r}
+gp +
+  scale_color_brewer(palette = "Spectral")
+```
+
+### Limiti degli assi
+
+In GGplot2 ci sono due modi per modificare i limiti degli assi:
+
+1. *rimuovendo* i dati esterni ad un intervallo: quiesto modifica il set di dati iniziali, e quindi cambia il comportamento di funzioni come `geom_smooth()`
+2. *zoomando* sul grafico, mantenendo intatto il set di dati.
+
+```{r, warning=FALSE}
+set.seed(123)
+data <- tibble(
+  x=seq(0,100,0.5),
+  y=0.5*x^2+0.1*x,
+  yn=y+rnorm(length(x), 0, 100)
+)
+
+(gp <- data %>% ggplot(aes(x=x, y=yn)) + 
+  geom_point() + 
+  geom_smooth(method="lm", formula=y~poly(x, 2)+x, aes(color="quadratico")) +
+  geom_smooth(method="lm", formula=y~x, aes(color="lineare")) +
+  scale_color_manual(name="Fit", values=c(2, 3)) +
+  ggtitle("Set dati completo"))
+gp + 
+  xlim(c(0, 25)) + 
+  ylim(c(-200, 1000)) + 
+  ggtitle("Eliminazione dati")
+gp +
+  coord_cartesian(xlim=c(0, 25), ylim=c(-200, 1000)) + 
+  ggtitle("Zoom")
+```
+
+
+# Esempi
+
+In questo capitolo riprendiamo alcuni concetti espressi nelle parti precedenti e ricreiamo gli stessi grafici in GGplot2.
+
+## Distribuzioni
+
+### Distribuzioni discrete
+
+```{r}
+df <- tibble(
+  x=1:20,
+  d=dgeom(x, prob=0.2),
+  pl=pgeom(x, prob=0.2, lower.tail = T),
+  pu=pgeom(x, prob=0.2, lower.tail = F)
+)
+ggplot(df, aes(x=x, y=d)) +
+  geom_col(width=0.1) +
+  labs(title="Densità di distribuzione geometrica", ylab="p(x)")
+
+ggplot(df) +
+  geom_step(aes(x=x, y=pl, col="Inferiore")) +
+  geom_step(aes(x=x, y=pu, col="Superiore")) +
+  scale_color_manual(name="Coda", values=c(2,3)) +
+  ggtitle("Probabilità cumulativa geometrica") +
+  ylab("p(x)")
+```
+
+### Distribuzioni continue
+
+```{r}
+df <- tibble(
+  x=seq(-4,4,length.out=100),
+  f=dnorm(x, 0, 1)
+)
+df %>% ggplot(aes(x=x, y=f)) +
+  geom_line(color="steelblue") + 
+  geom_hline(yintercept=0, linetype=2) +
+  geom_vline(xintercept=c(-3, 0, 3), linetype=2) +
+  ggtitle("Standard normal density function") + 
+  ylab("f(x)")
+```
+### Istogrammi e QQ-plot
+
+```{r}
+set.seed(123)
+tibble(
+  x=rnorm(100)
+) %>%
+ggplot(aes(x=x)) + 
+  geom_histogram(aes(y=..density..), fill="steelblue", color="black") +
+  geom_density(fill="red", alpha=0.2)
+```
+
+**Nota**: in `aes()` la notazione `..density..` sta a indicare "applica la funzione `density` ai dati in ingresso".
+
+```{r}
+set.seed(123)
+tibble(
+  x=rnorm(100, mean=20)
+) %>%
+ggplot(aes(sample=x)) + 
+  geom_qq() +
+  geom_qq_line(color="red") + 
+  xlab("Quantili teorici") +
+  ylab("Quantili del campione")
+```
+### Boxplot
+
+```{r}
+df <- read_table(mydata("twosample.dat"), col_types=cols(
+  treat=col_factor(),
+  yield=col_double()))
+df %>% ggplot(aes(x=treat, y=yield)) +
+  geom_boxplot(fill="steelblue")
+```
+### histogrammi marginali
+
+```{r}
+df <- tibble(mtcars)
+gp <- df %>% ggplot(aes(x=wt, y=mpg, color=cyl, size=cyl)) +
+  geom_point() + 
+  theme(legend.position="bottom")
+
+gp %>% ggMarginal(type="histogram", fill="lightgray")
+```
+
+
+
+## Serie temporali
+
+```{r}
+datafile <- "http://repos.dii.unitn.it:8080/data/temperature-anomaly.csv"
+data <- read.csv(datafile)
+data <- data[data$Entity=="Global",]
+t.global <- xts(data$Median.temp, 
+                order.by=as.Date(as.character(data$Year), format="%Y"),
+                frequency = 1)
+```
+
+```{r}
+x1 <- t.global["/1999-12-31"]
+p1 <- autoplot(x1) + 
+  geom_hline(yintercept = 0) +
+  geom_area(aes(x=index(x1), y=ifelse(x1<0, x1, 0)), fill="blue") +
+  geom_area(aes(x=index(x1), y=ifelse(x1>0, x1, 0)), fill="orange") +
+  labs(title="Anomalia termica", subtitle = "Terra/mare, globale") + 
+  xlab("Anno") +
+  ylab("Anomalia (°C)")
+
+x2 <- t.global["2000-1-1/"]
+p1 + geom_line(data=x2, aes(Index, x2), color="red") +
+  #scale_x_continuous(breaks=seq(start(x1), end(x2), by="20 years")) +
+  scale_x_date(breaks="10 years", date_labels="%Y") +
+  scale_y_continuous(breaks=seq(round(min(t.global), 0.1), round(max(t.global), 0.1), by=0.1))
+```

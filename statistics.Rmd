@@ -17,6 +17,12 @@ output:
       babel: ["italian"]
   documentclass: article
   classoption: a4paper
+header-includes:
+  - \usepackage{fancyhdr}
+  - \pagestyle{fancy}
+  - \fancyhead[CO,CE]{}
+  - \fancyfoot[CO,CE]{Corso di GNU-R e RStudio --- paolo.bosetti@unitn.it}
+  - \fancyfoot[LE,RO]{\thepage}
 ---
 
 ```{r, echo=FALSE}
