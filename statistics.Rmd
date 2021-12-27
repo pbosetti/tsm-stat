@@ -359,6 +359,19 @@ L'interfaccia più comoda utilizza una *formula*: `yield~treat` significa "plott
 
 Tanto più due box sono sfalsati, tanto più è probabile che le due classi siano significativamente distinti, e viceversa. Un'analisi più dettagliata di cosa vuol dire "significativamente distinti" richiede ovviamente l'introduzione di un **test di inferenza**.
 
+A volte è utile reaizzare un *diagramma di Pereto* per visualizzare la distribuzione cumulativa. La libreria `qcc` mette a disposizione il la funzione `pareto.chart()`:
+
+```{r}
+library(qcc)
+set.seed(123)
+n <- 10
+x <- exp(rnorm(n, mean=5, sd=1.5))
+names(x) <- letters[1:n]
+pareto.chart(x)
+```
+Da cui si vede, ad esempio, che i primi due elementi, `f` e `c`, sono responsabili del 75% dell'effetto.
+
+
 # Statistica inferenziale
 
 Fare inferenza significa estendere l'osserazione di un campione al comportamento dell'intera popolazione. Il più semplice test di inferenza è il test di Student, che studia la *media* di un campione. Ogni test di inferenza, per complicato che sia, si conclude sempre nel calcolare la probabilità di errore, detta *p-value*, di commettere un errore di tipo I, ossia rifiutare l'ipotesi nulla (non-significatività) quando essa è invece vera.
@@ -684,6 +697,38 @@ plot(df$RunOrder, residuals(df.lm))
 plot(df.lm$fitted.values, residuals(df.lm))
 ```
 Escludendo due soli punti estremi (che sono pochi), non si evidenziano particolari pattern quindi si accetta il modello.
+
+
+## Altri test
+
+### Chi-quadro
+
+Il test del Chi-quadro (distribuzione $\chi^2$) consente di verificare l'ipotesi nulla che non ci sia correlazione tra due variabili categoriche, ad esempio la taglia di vestito e il sesso:
+
+```{r}
+set.seed(123)
+df <- data.frame(
+  sex=sample(factor(c("M", "F"), ordered=F), size=100, replace=T),
+  size=sample(factor(c("S", "M", "L"), ordered=T), size=100, prob=c(20,50,30), replace=T)
+)
+table(df)
+```
+
+```{r}
+chisq.test(df$sex, df$size)
+```
+
+### Kolmogorov-Smirnov
+
+Il test KS consente di verificare l'ipotesi nulla che un dato campione provenga da una determinata popolazione di distribuzione nota (inclusi i parametri):
+
+```{r}
+ks.test(rnorm(1000), "pnorm", 0, 1)
+ks.test(rnorm(1000), "pt", 3)
+ks.test(rnorm(1000), runif(100, -3, 3))
+ks.test(rnorm(100, mean=1), rnorm(100, mean=1.5))
+```
+
 
 
 # Piani fattoriali (DoE)
