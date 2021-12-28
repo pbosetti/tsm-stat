@@ -33,6 +33,7 @@ knitr::opts_chunk$set(
 library(latex2exp)
 library(car)
 library(ROCR)
+source("myfunctions.R")
 ```
 
 # Regressione lineare
@@ -189,7 +190,7 @@ Vogliamo prevedere la sopravvivenza di una bottiglia di sapone liquido al test d
 Abbiamo un data frame che contiene i risultati di 400 diversi test di caduta per bottiglie riempite a differenti livelli rispetto alla capacità nominale. Cominciamo caricando e visualizzando i dati con un istogramma del livello di riempimento:
 
 ```{r}
-data <- read.table("http://repos.dii.unitn.it:8080/data/soap_bottles.txt", h=T)
+data <- read.table(mydata("soap_bottles.txt"), h=T)
 knitr::kable(head(data))
 hist(data$p, probability=T,
      xlab="Riempimento (%)",

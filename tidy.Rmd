@@ -36,6 +36,9 @@ library(ggthemes)
 library(xts)
 library(RColorBrewer)
 library(ggExtra)
+library(tsbox)
+library(forecast)
+library(modelr)
 source("myfunctions.R")
 ```
 
@@ -234,6 +237,79 @@ mtcars %>% mutate(
   head
 ```
 
+La libreria `purrr` mette inoltre a disposizione funzioni di mapping più comode rispetto alle equivalenti di R base (`lapply` e simili), ed hanno il vantaggio di ritornare sempre lo stesso tipo di oggetto, a differenza delle funzioni base, e quindi di essere più adatte alla programmazione:
+
+```{r}
+df <- tibble(
+  a = rnorm(10),
+  b = rnorm(10),
+  c = rnorm(10),
+  d = rnorm(10)
+)
+map(df, mean) %>% class
+map_dbl(df, mean) %>% class
+map_lgl(df$a, function(x) x>=0)
+```
+
+Esistono anche versioni per funzioni a due parametri e a $n$ parametri:
+
+```{r}
+mu <- list(1, 3, -10)
+sigma <- list(1, 0.2, 2)
+map2(mu, sigma, rnorm, n=5)
+n <- 1:3
+list(n=n, mean=mu, sd=sigma) %>%
+  pmap(rnorm) %>%
+  str
+```
+
+Se tutti gli argimenti hanno la stessa lunghezza si può usare anche un data frame:
+
+```{r}
+params <- tribble(
+  ~mean, ~sd, ~n,
+    5,     1,  1,
+   10,     5,  2,
+   -3,    10,  3
+)
+params %>% 
+  pmap(rnorm) %>%
+  str
+```
+
+## Stringhe
+
+La manipolazione delle stringhe è tradizionalmente più laboriosa in R che in altri linguaggi dinamici (come Ruby o Python). Le librerie `glue` e `stringr` semplificano due classi di operazioni: la prima l'interpolazione di stringhe, la seconda il matching.
+
+In R base non c'è un meccanismo per l'interpolazione di stringhe, ma esse vanno combinate con ripetute chiamate a `cat()`. `glue` invece introduce l'interpolazione:
+
+```{r}
+library(glue)
+glue("Questo istante: {date()}. Autore: {author}", author="Paolo Bosetti")
+```
+
+La versione `glue_data()` è fatta per accettare *pipe*:
+
+```{r}
+head(mtcars) %>% glue_data("{rownames(.)} has {hp} hp")
+```
+
+La libreria `stringr` offre numerose funzioni, tra cui le più utili sono quelle per spezzare, per cambiare *case* (maiuscolo/minuscolo) e per efettuare il *patern matching* con espressioni regolari.
+Per queste ultime, è utile installare l'add-in di RStudio `RegExplain`:
+
+```{r eval=FALSE}
+devtools::install_github("gadenbuie/regexplain")
+```
+
+```{r}
+library(stringr)
+str_split(c("a,b", "c,d,e"), ",")
+c("Paolo Bosetti", "Bosetti, Paolo") %>%
+  str_match_all("(\\w+)[,\\s]+(\\w+)")
+```
+
+
+
 ## Grafici base
 
 Forse una delle innovazioni più importanti di Tidyverse è la nuova interfaccia di plotting, che è fornita dalla libreria `ggplot2`, dove la doppia `g` sta per *Grammar of Graphics*, secondo l'idea di comporre un grafico accostando funzioni secondo una grammatica base che consente di tenere separati i dati dagli algoritmi e dall'estetica.
@@ -370,14 +446,13 @@ df <- tibble(
 )
 ggplot(df, aes(x=x, y=d)) +
   geom_col(width=0.1) +
-  labs(title="Densità di distribuzione geometrica", ylab="p(x)")
+  labs(title="Densità di distribuzione geometrica", y="p(x)")
 
 ggplot(df) +
   geom_step(aes(x=x, y=pl, col="Inferiore")) +
   geom_step(aes(x=x, y=pu, col="Superiore")) +
   scale_color_manual(name="Coda", values=c(2,3)) +
-  ggtitle("Probabilità cumulativa geometrica") +
-  ylab("p(x)")
+  labs(title="Probabilità cumulativa geometrica", y="P(x)")
 ```
 
 ### Distribuzioni continue
@@ -391,8 +466,7 @@ df %>% ggplot(aes(x=x, y=f)) +
   geom_line(color="steelblue") + 
   geom_hline(yintercept=0, linetype=2) +
   geom_vline(xintercept=c(-3, 0, 3), linetype=2) +
-  ggtitle("Standard normal density function") + 
-  ylab("f(x)")
+  labs("Standard normal density function", y="f(x)")
 ```
 ### Istogrammi e QQ-plot
 
@@ -439,13 +513,49 @@ gp <- df %>% ggplot(aes(x=wt, y=mpg, color=cyl, size=cyl)) +
 gp %>% ggMarginal(type="histogram", fill="lightgray")
 ```
 
+## Modelli
+
+La libreria `modelr` è utile nella costruzione e analisi di modelli lineari.
+
+```{r}
+set.seed(123)
+df <- tibble::tibble(
+  x = sort(runif(100)),
+  y = 5 * x + 0.5 * x ^ 2 + 3 + rnorm(length(x))
+)
+```
+
+Il *subsetting* viene effettuato mediante le funzioni `resample()` e `resample_partition()`. Esse ritornano oggetti `resample`, che contengono solo la lista degli indici campionati e un *puntatore* ai dati originali; in questo modo, ricampionamenti successivi su larghe quantità di dati sono più efficienti:
+
+```{r}
+df1 <- resample(df, sample(seq_along(df$x), 10)) # 10 elementi casuali
+ggplot(df, aes(x=x, y=y)) + geom_point() +
+  geom_point(data=as_tibble(df1), mapping=aes(x=x, y=y), color="red")
+```
+```{r}
+dfp <- resample_partition(df, c(train=0.8, test=0.2))
+ggplot(as_tibble(dfp$train)) + 
+  geom_point(aes(x=x, y=y, color="train")) +
+  geom_point(aes(x=x, y=y, color="test"), as_tibble(dfp$test)) + 
+  scale_color_manual(name="Categoria", values=c(2,3))
+```
+```{r}
+df.train <- as_tibble(dfp$train)
+df.lm <- lm(y~x, data=df.train)
+df.train %<>% add_predictions(df.lm)
+df.train %<>% add_residuals(df.lm)
+ggplot(df.train) + 
+  geom_point(aes(x=x, y=y)) + 
+  geom_line(aes(x=x, y=pred), col="red") + 
+  geom_linerange(aes(x=x, ymin=y, ymax=y-resid), color=gray(2/3))
+```
+
 
 
 ## Serie temporali
 
 ```{r}
-datafile <- "http://repos.dii.unitn.it:8080/data/temperature-anomaly.csv"
-data <- read.csv(datafile)
+data <- read.csv(mydata("temperature-anomaly.csv"))
 data <- data[data$Entity=="Global",]
 t.global <- xts(data$Median.temp, 
                 order.by=as.Date(as.character(data$Year), format="%Y"),
@@ -468,3 +578,58 @@ p1 + geom_line(data=x2, aes(Index, x2), color="red") +
   scale_x_date(breaks="10 years", date_labels="%Y") +
   scale_y_continuous(breaks=seq(round(min(t.global), 0.1), round(max(t.global), 0.1), by=0.1))
 ```
+
+Si noti che gli oggetti `xts` vengono automaticamente convertiti in `data.frame` invocando automaticamente la funzione `fortify()`. Quest'ultima crea la colonna dei tempi con il nome `Index`:
+
+```{r}
+x2 %>% fortify %>% str
+```
+Per questo motivo, si usa l'estetica `aes(x=Index, y=x2)`
+
+
+```{r}
+passl <- AirPassengers %>% log %>% ts_xts
+
+gp <- passl %>%
+  ggplot(aes(x=Index, y=value)) + 
+  geom_line()
+
+(fit <- auto.arima(ts_ts(passl)))
+pred <- forecast(fit, h=12)
+
+gp + 
+  geom_line(aes(x=Index, y=value), 
+            data=ts_xts(pred$fit), color="gray", lty=2) +
+  geom_ribbon(aes(x=Index, 
+                  ymin=ts_xts(pred$lower)[,2], 
+                  ymax=ts_xts(pred$upper)[,2]), 
+              data=ts_xts(pred$mean), fill=gray(0.9)) +
+  geom_ribbon(aes(x=Index, 
+                  ymin=ts_xts(pred$lower)[,1], 
+                  ymax=ts_xts(pred$upper)[,1]), 
+              data=ts_xts(pred$mean), fill=gray(0.8)) +
+  geom_line(aes(x=Index, y=value), data=ts_xts(pred$mean), color="red") + 
+  labs(title="Air Passengers", x="Data", y="Numero passeggeri (/1000)") + 
+  scale_x_date(breaks="1 year", date_labels="%Y")
+```
+In conclusione, è opportuno ricordarsi quanto segue:
+
+* le funzioni ARIMA supportano gli oggetti `ts`, *e non* gli oggetti `xts`: se si passa un `xts` a `arima()` esso viene convertito in un `data.frame`, perdendo l'informazione teporale. È quindi **sempre opportuno convertire un `xts` mediante la funzione `tsbox::ts_ts()`**;
+* viceversa, GGplot2 opera su oggetti `xts` **e non su `ts`**; gli oggetti `xts` vengono convertiti in `tibble` automaticamente invocando la funzione `ggplot2::fortify()`;
+* la predizione restituisce un oggetto `predict`, che al suo interno contiene `ts` per il fit, la predizione e gli intervalli di confidenza. Per essere plottati essi devono prima essere convertiti nuovamente in un `xts` mediante `tsbox::ts_xts()`.
+
+Infine, quando si costruisce l'estetica con `aes()` è utile verificare i *nomi* delle variabili messe a disposizione dai dati in questo modo:
+
+```{r}
+ggplot(ts_xts(pred$mean))$data %>% str
+```
+
+Come si vede, usando `ts_xts(pred$mean)` come parametro `data` i tempi vengono nominati `Index` e i valori `value`.
+
+Ovviamente quanto sopra è già fornito mediante un'unica funzione, `forecast::autoplot()`, che accetta come argomento sia `ts` che `xts`, che addirittura `forecast`:
+
+```{r}
+autoplot(pred) + 
+  labs(x="Tempo", y="Passeggeri (/1000)")
+```
+
