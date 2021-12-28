@@ -128,7 +128,7 @@ stat <- read_csv2(mydata("censimento_TAA_2011.csv"))
 trace <- read_csv2(mydata("tracciato_2011_localita.csv"))
 ```
 
-Ovviamente esistono anche le controparti `write_*()`, che accettano come primo argomento un data rame oppure una `tibble`. Generalmente queste funzioni sono molto più veloci delle controparti della libreria `base` (`write.*()`).
+Ovviamente esistono anche le controparti `write_*()`, che accettano come primo argomento un data frame oppure una `tibble`. Generalmente queste funzioni sono molto più veloci delle controparti della libreria `base` (`write.*()`).
 
 
 ## Manipolazione dati
