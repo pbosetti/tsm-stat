@@ -21,7 +21,7 @@ output:
 header-includes:
   - \usepackage{fancyhdr}
   - \pagestyle{fancy}
-  - \fancyhead[CO,CE]{}
+  - \fancyhead[CO,CE]{\includegraphics[height=0.5cm]{by-nc-sa.png}}
   - \fancyfoot[CO,CE]{Corso di GNU-R e RStudio --- paolo.bosetti@unitn.it}
   - \fancyfoot[LE,RO]{\thepage}
 ---
@@ -39,6 +39,7 @@ library(ggExtra)
 library(tsbox)
 library(forecast)
 library(modelr)
+library(cowplot)
 source("myfunctions.R")
 ```
 
@@ -472,15 +473,26 @@ df %>% ggplot(aes(x=x, y=f)) +
 
 ```{r}
 set.seed(123)
-tibble(
+(data <- tibble(
   x=rnorm(100)
-) %>%
+)) %>%
 ggplot(aes(x=x)) + 
   geom_histogram(aes(y=..density..), fill="steelblue", color="black") +
   geom_density(fill="red", alpha=0.2)
 ```
 
 **Nota**: in `aes()` la notazione `..density..` sta a indicare "applica la funzione `density` ai dati in ingresso".
+
+A volte si desidera una raffigurazione comparativa:
+
+```{r}
+ggplot(data=diamonds) + 
+  stat_summary(mapping=aes(x=cut, y=price), 
+               fun.min=min,
+               fun.max=max,
+               fun=median)
+```
+Infine, la distribuzione può essere analizzata mediante i diagrammi quantile-quantile:
 
 ```{r}
 set.seed(123)
@@ -502,7 +514,7 @@ df <- read_table(mydata("twosample.dat"), col_types=cols(
 df %>% ggplot(aes(x=treat, y=yield)) +
   geom_boxplot(fill="steelblue")
 ```
-### histogrammi marginali
+### Istogrammi marginali
 
 ```{r}
 df <- tibble(mtcars)
@@ -633,3 +645,164 @@ autoplot(pred) +
   labs(x="Tempo", y="Passeggeri (/1000)")
 ```
 
+## Diamanti grezzi!
+
+L'analisi dei sistemi multivariati richiede sempre particolare attenzione. Sono due i casi in cui l'analista può essere fuorviato dai dati:
+
+1. fattori confusi
+2. fattori non ortogonali
+
+In entrambi i casi le tecniche di *Design of Experiments* viste nella Parte 1 sono d'aiuto.
+
+![https://imgs.xkcd.com/comics/confounding_variables.png](confounding_variables.png){width=3in}
+
+### Fattori confusi
+
+La libreria `tidyverse` contiene la `tibble` `diamonds`, un elenco di caratteristiche di `r length(diamonds$cut)` diamanti. Vediamo come il prezzo dipende da alcuni fattori:
+
+```{r}
+ggplot(diamonds, aes(x=reorder(cut, price, FUN=median), y=price)) + 
+  geom_boxplot() + 
+  coord_flip() +
+  labs(x="Taglio", y="Prezzo")
+head(diamonds$cut)
+```
+Come si vede, nonostante `Ideal` sia il taglio migliore e `Fair` il peggiore, *in media* quest'ultimo è associato ai prezzi maggiori, e il primo ai minori.
+
+Analogamente, in funzione di colore e chiarezza:
+
+```{r}
+p1 <- ggplot(diamonds, aes(x=color, y=price)) +
+  geom_boxplot() + 
+  labs(x="Colore", y="Prezzo")
+p2 <- ggplot(diamonds, aes(x=clarity, y=price)) +
+  geom_boxplot() + 
+  labs(x="Chiarezza", y="Prezzo")
+plot_grid(p1, p2)
+```
+In questo caso i diamanti peggiori sono di colore `J` (giallognoli) e chiarezza `I1`, cioè con inclusioni visibili a occhio nudo. **Eppure sono tra i più cari. Perchè?**
+
+Il motivo di questa conclusione fuorviante è che stiamo trascurando un fattore confuso: la dimensione (`carat`).
+
+Possiamo studiare l'effetto della dimensione con grafici come quelli realizzati più su, oppure possiamo realizzare un boxplot, raggruppandoli per classi spaziate di 0.1 carati:
+
+```{r}
+diamonds %>% 
+  filter(carat < 3) %>%
+  ggplot(aes(x = carat, y = price)) + 
+    geom_boxplot(mapping = aes(group = cut_width(carat, 0.1)), varwidth = T)
+```
+
+Il parametro `varwidth=T` adatta la larghezza dei boxplot in funzione del numero di osservazioni per ogni classe. Un altro modo per visualizzare la numerosità delle classi è raggruppando le osservazioni per classi di uguale numerosità, diciamo 20 diamanti; in questo caso i box più larghi sono quelli meno numerosi:
+
+```{r}
+diamonds %>% 
+  filter(carat < 3) %>%
+  ggplot(aes(x = carat, y = price)) + 
+    geom_boxplot(mapping = aes(group = cut_number(carat, 20)))
+```
+
+Focalizziamoci sui diamanti con carati inferiori al 99-esimo percentile, cioè
+```{r}
+(cmax <- quantile(diamonds$carat, p=0.99))
+```
+
+Inoltre, data la grande variazione di prezzo trasformiamo il modello in base al logaritmo del prezzo:
+
+```{r}
+diamonds2 <- diamonds %>%
+  filter(carat < cmax) %>%
+  mutate(lprice = log10(price), lcarat=log10(carat))
+diamonds2 %>%
+  ggplot(aes(x=lcarat, y=lprice)) +
+  geom_hex(bins=50)
+```
+
+È evidente un andamento lineare sul piano bilogaritmico. Ora possiamo creare un modello lineare sui dati trasformati e *sottrarlo* ai dati originali, in modo da poter studiare, indipendentemente dalla dimensione, l'effetto di colore, taglio e chiarezza sul prezzo.
+
+```{r}
+diamonds2.lm <- lm(lprice~lcarat, data=diamonds2)
+fit <- diamonds2 %>%
+  data_grid(carat = seq_range(carat, 20)) %>%
+  mutate(lcarat = log10(carat)) %>%
+  add_predictions(diamonds2.lm, "lprice") %>%
+  mutate(price = 10^lprice)
+
+ggplot(diamonds2, aes(x=carat, y=price)) +
+  geom_hex(bins=50) + 
+  geom_line(data=fit, color="red", size=2)
+```
+
+Ora aggiungiamo i residui a `diamonds2`:
+
+```{r}
+(diamonds2 <- diamonds2 %>%
+  add_residuals(diamonds2.lm, "residual price")) %>%
+  ggplot(aes(x=lcarat, y=`residual price`)) + 
+    geom_hex(bins=50)
+
+
+```
+
+Finalmente possiamo studiare l'effetto di taglio, colore e chiarezza:
+
+```{r}
+p1 <- ggplot(diamonds2, aes(x=cut, y=`residual price`)) + geom_boxplot()
+p2 <- ggplot(diamonds2, aes(x=color, y=`residual price`)) + geom_boxplot()
+p3 <- ggplot(diamonds2, aes(x=clarity, y=`residual price`)) + geom_boxplot()
+plot_grid(p1, p2, p3, nrow=1)
+```
+
+E questi grafici, depurati dal fattore confuso `carat`, mostrano l'effettiva influenza di questi fattori sulla *componente residua del prezzo*.
+
+È evidente, quindi, che in generale una analisi preliminare dei fattori che influenzano un dato processo è fondamentale per assicurarsi che non ci siano fattori confusi che mascherano l'effetto di altri fattori.
+
+### Fattori non ortogonali
+
+In certi casi l'interazione tra due fattori rilevata da un'analisi ANOVA significa che si sono scelti fattori correlati.
+
+Consideriamo l'esempio di un processo di stampa 3D a deposizione di fuso (FDM): due importanti parametri della macchina sono la velocità di estrusione (mm$3$/min) e la velocità di spostamento della testina (mm/min). Carichiamo i dati di un piano fattoriale a due livelli, ripetuto tre volte, per i due fattori `Extr` e `Feed`, in cui la resa è il numero di pori per centimetro cubo.
+
+```{r}
+df <- read_delim(mydata("3dprint.txt"), comment="#", col_types = c(rep="i", Feed="d", Extr="d"))
+df.lm <- lm(Strength~Feed*Extr, data=df)
+anova(df.lm)
+```
+
+La tabella ANOVA indica un'elevata significatività dell'interazione tra i due parametri e una modesta significatività della velocità di estrusione, mentre la velocità di avanzamento risulta non significativa. Come mai l'effetto più intenso è quello di un'interazione? come mai la velocità non ha effetto, ma lo ha la sua interazione?
+
+Interpoliamo il modello sul dominio di analisi e realizziamo un diagramma a livelli della *superficie di risposta*:
+
+```{r}
+df.lm <- lm(Strength~Feed:Extr + Extr, data=df)
+df %>%
+  data_grid(Feed=seq_range(Feed, 20), Extr=seq_range(Extr, 20)) %>%
+  add_predictions(df.lm, "Strength_pred") %>%
+  ggplot(aes(x=Feed, y=Extr, z=Strength_pred)) +
+    geom_contour_filled() + 
+    labs(fill="Strength")
+```
+
+La superficie di risposta ha una forma a sella: la porosità è alta quando entrambi i fattori sono bassi o quando entrambi sono alti, mentre è bassa quando sono di segno opposto. Avere una forte interazione significa che l'effetto di un aumento di velocità dipende dal *livello* dell'altro fattore, velocità di estrusione.
+
+Ragionando sul processo fisico, ci rendiamo conto che `Feed` e `Extr` si combinano nella *sezione* di materiale depositato (come `Extr/Feed`), e tanto più essa è piccola, tanto più alta è la probabilità di avere pori. Altresì, le combinazioni $(-1,-1)$ e $(+1,+1)$ dei due fattori producono di fatto la stessa sezione depositata, e quindi rappresentano la stessa condizione di prova.
+
+È quindi preferibile considerare come fattore la sezione depositata e la velocità di estrusione:
+
+```{r}
+(df2 <- df %>% mutate(Xsec = Extr/Feed)) %>% filter(rep==1) %>% select(Feed:Xsec)
+df2.lm <- lm(Strength~Extr*Xsec, data=df2)
+anova(df2.lm)
+```
+
+Come si vede, il modello ora contiene solo l'effetto dei due fattori, mentre l'interazione risulta non significativa. In grafico:
+
+```{r}
+df2.lm <- lm(Strength~Extr + Xsec, data=df2)
+df2 %>%
+  data_grid(Extr=seq_range(Extr, 20), Xsec=seq_range(Xsec, 20)) %>%
+  add_predictions(df2.lm, "Strength_pred") %>%
+  ggplot(aes(x=Extr, y=Xsec, z=Strength_pred)) +
+    geom_contour_filled() + 
+    labs(fill="Defects")
+```

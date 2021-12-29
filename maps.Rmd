@@ -19,7 +19,7 @@ output:
 header-includes:
   - \usepackage{fancyhdr}
   - \pagestyle{fancy}
-  - \fancyhead[CO,CE]{}
+  - \fancyhead[CO,CE]{\includegraphics[height=0.5cm]{by-nc-sa.png}}
   - \fancyfoot[CO,CE]{Corso di GNU-R e RStudio --- paolo.bosetti@unitn.it}
   - \fancyfoot[LE,RO]{\thepage}
 always_allow_html: true
