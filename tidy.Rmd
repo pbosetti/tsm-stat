@@ -295,7 +295,7 @@ La versione `glue_data()` è fatta per accettare *pipe*:
 head(mtcars) %>% glue_data("{rownames(.)} has {hp} hp")
 ```
 
-La libreria `stringr` offre numerose funzioni, tra cui le più utili sono quelle per spezzare, per cambiare *case* (maiuscolo/minuscolo) e per efettuare il *patern matching* con espressioni regolari.
+La libreria `stringr` offre numerose funzioni, tra cui le più utili sono quelle per spezzare, per cambiare *case* (maiuscolo/minuscolo) e per efettuare il *pattern matching* con espressioni regolari.
 Per queste ultime, è utile installare l'add-in di RStudio `RegExplain`:
 
 ```{r eval=FALSE}
@@ -713,9 +713,11 @@ Inoltre, data la grande variazione di prezzo trasformiamo il modello in base al 
 diamonds2 <- diamonds %>%
   filter(carat < cmax) %>%
   mutate(lprice = log10(price), lcarat=log10(carat))
+
 diamonds2 %>%
   ggplot(aes(x=lcarat, y=lprice)) +
-  geom_hex(bins=50)
+  geom_hex(bins=50) + 
+  geom_smooth(method="lm", color="red")
 ```
 
 È evidente un andamento lineare sul piano bilogaritmico. Ora possiamo creare un modello lineare sui dati trasformati e *sottrarlo* ai dati originali, in modo da poter studiare, indipendentemente dalla dimensione, l'effetto di colore, taglio e chiarezza sul prezzo.
@@ -747,9 +749,12 @@ Ora aggiungiamo i residui a `diamonds2`:
 Finalmente possiamo studiare l'effetto di taglio, colore e chiarezza:
 
 ```{r}
-p1 <- ggplot(diamonds2, aes(x=cut, y=`residual price`)) + geom_boxplot()
-p2 <- ggplot(diamonds2, aes(x=color, y=`residual price`)) + geom_boxplot()
-p3 <- ggplot(diamonds2, aes(x=clarity, y=`residual price`)) + geom_boxplot()
+p1 <- ggplot(diamonds2, aes(x=cut, y=`residual price`)) + geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+p2 <- ggplot(diamonds2, aes(x=color, y=`residual price`)) + geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+p3 <- ggplot(diamonds2, aes(x=clarity, y=`residual price`)) + geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 plot_grid(p1, p2, p3, nrow=1)
 ```
 
@@ -761,7 +766,7 @@ E questi grafici, depurati dal fattore confuso `carat`, mostrano l'effettiva inf
 
 In certi casi l'interazione tra due fattori rilevata da un'analisi ANOVA significa che si sono scelti fattori correlati.
 
-Consideriamo l'esempio di un processo di stampa 3D a deposizione di fuso (FDM): due importanti parametri della macchina sono la velocità di estrusione (mm$3$/min) e la velocità di spostamento della testina (mm/min). Carichiamo i dati di un piano fattoriale a due livelli, ripetuto tre volte, per i due fattori `Extr` e `Feed`, in cui la resa è il numero di pori per centimetro cubo.
+Consideriamo l'esempio di un processo di stampa 3D a deposizione di fuso (FDM): due importanti parametri della macchina sono la velocità di estrusione (mm$^3$/min) e la velocità di spostamento della testina (mm/min). Carichiamo i dati di un piano fattoriale a due livelli, ripetuto tre volte, per i due fattori `Extr` e `Feed`, in cui la resa è la rsistenza del materiale.
 
 ```{r}
 df <- read_delim(mydata("3dprint.txt"), comment="#", col_types = c(rep="i", Feed="d", Extr="d"))
@@ -785,7 +790,7 @@ df %>%
 
 La superficie di risposta ha una forma a sella: la porosità è alta quando entrambi i fattori sono bassi o quando entrambi sono alti, mentre è bassa quando sono di segno opposto. Avere una forte interazione significa che l'effetto di un aumento di velocità dipende dal *livello* dell'altro fattore, velocità di estrusione.
 
-Ragionando sul processo fisico, ci rendiamo conto che `Feed` e `Extr` si combinano nella *sezione* di materiale depositato (come `Extr/Feed`), e tanto più essa è piccola, tanto più alta è la probabilità di avere pori. Altresì, le combinazioni $(-1,-1)$ e $(+1,+1)$ dei due fattori producono di fatto la stessa sezione depositata, e quindi rappresentano la stessa condizione di prova.
+Ragionando sul processo fisico, ci rendiamo conto che `Feed` e `Extr` si combinano nella *sezione* di materiale depositato (come `Extr/Feed`), e tanto più essa è piccola, tanto più alta è la probabilità di avere pori, quindi minore resistenza. Altresì, le combinazioni $(-1,-1)$ e $(+1,+1)$ dei due fattori producono di fatto la stessa sezione depositata, e quindi rappresentano la stessa condizione di prova.
 
 È quindi preferibile considerare come fattore la sezione depositata e la velocità di estrusione:
 
@@ -804,5 +809,5 @@ df2 %>%
   add_predictions(df2.lm, "Strength_pred") %>%
   ggplot(aes(x=Extr, y=Xsec, z=Strength_pred)) +
     geom_contour_filled() + 
-    labs(fill="Defects")
+    labs(fill="Strength")
 ```

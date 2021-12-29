@@ -44,7 +44,7 @@ R dispone di una completa serie di funzioni per la gestione di numeri casuali, d
 
 ## Distribuzioni di probabilità discrete
 
-Le distribuzioni discrete hanno valore solo sui numeri interi. Le più comuni sono `geom` (geometrica), `binom` (binomiale), `pois` (Poisson) I grafici vengoni generalmente riportati con linee verticali, usando l'opzione `typ="h"` nei comandi di plot:
+Le distribuzioni discrete hanno valore solo sui numeri interi. Le più comuni sono `geom` (geometrica), `binom` (binomiale), `pois` (Poisson). I grafici vengoni generalmente riportati con linee verticali, usando l'opzione `typ="h"` nei comandi di plot:
 
 ```{r}
 x <- 1:20
@@ -118,7 +118,7 @@ curve(qnorm(x), from=0.001, to=0.999, n=1000,
 abline(h=0, lty=2)
 abline(v=c(-1, 0, 1), lty=2)
 ```
-Si noti la funzione `TeX` della librera `latex2exp` per inserire formule nelle etichette dei grafici ($f^{-1}(p)$).
+Si noti l'uso della funzione `TeX` della librera `latex2exp` per inserire formule nelle etichette dei grafici ($f^{-1}(p)$).
 
 Le funzioni che cominciano con `r` sono utili per *generare* vettori di numeri casuali. Per ottenere sempre la setessa sequenza pseudo-casuale si può impostare un seme:
 
