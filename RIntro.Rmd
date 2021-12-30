@@ -5,7 +5,7 @@ author: "Paolo Bosetti (`paolo.bosetti@unitn.it`)"
 date: "11/23/2021"
 output:
   beamer_presentation: 
-    theme: AnnArbor
+    theme: CambridgeUS
     fig_width: 6
     fig_height: 3.5
     fonttheme: structuresmallcapsserif
@@ -22,14 +22,14 @@ library(purrr)
 ```{r include=FALSE}
 course <- tribble(
   ~topic, ~hours, ~source,
-  "Richiami di statistica", 5, "slide pdf",
-  "L'ambiente RStudio", 1, knitr::current_input(),
-  "Il linguaggio R", 1, knitr::current_input(),
+  "Richiami di statistica", 4, "slide pdf",
+  "L'ambiente RStudio", 0.5, knitr::current_input(),
+  "Il linguaggio R", 1.5, knitr::current_input(),
   "Statistica base in R", 4, "statistics.Rmd",
   "Modelli di regressione lineare e lineare generalizzata", 2, "reglin.Rmd",
-  "Serie temporali e modelli ARIMA", 3, "ARIMA.Rmd",
-  "*Tidyverse*", 2, "tidy.Rmd",
-  "Mappe e GIS", 3, "maps.Rmd"
+  "Serie temporali e modelli ARIMA", 3.5, "ARIMA.Rmd",
+  "*Tidyverse*", 3.5, "tidy.Rmd",
+  "Mappe e GIS", 2, "maps.Rmd"
 )
 ```
 

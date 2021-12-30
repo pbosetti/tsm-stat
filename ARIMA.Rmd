@@ -207,7 +207,6 @@ Per questi motivi, si consiglia l'uso di `xts` per la gestione della serie tempo
 La prima verifica è sempre quella sui dati mancanti. Eliminiamo qualche dato dalla serie `cpm` per vedere, in seguito, come gestre i dati mancanti:
 
 ```{r}
-
 cpmx[c(30, 213, 401)] <- NA
 ```
 
@@ -249,7 +248,7 @@ lines(new, col="red")
 Vediamo le predizioni odierne:
 
 ```{r}
-win <- last(cpmx, "8 weeks")
+win <- last(cpmx, "16 weeks")
 (fit <- auto.arima(ts_ts(win)))
 plot(forecast(fit, 30, level=c(80, 95, 99)),
      xlim=c(-60,+30)/365+decimal_date(end(cpmx))

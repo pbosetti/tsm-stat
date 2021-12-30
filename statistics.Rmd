@@ -180,7 +180,7 @@ La prima soluzione non permette lo scambio dati con altri software. La seconda s
 
 In particolare, `cat()` e `write.table()` possono essere usate in sequenza per salvare una tabella anticipata da qualche riga di commento.
 
-Per inciso, simili tabelle erano utilizzate per effetuare i T-test prima dell'avvento dei calcolatori.
+Creiamo una tabella delle probabilità cumulate della distribuzione T. Per inciso, simili tabelle erano utilizzate per effetuare i T-test prima dell'avvento dei calcolatori.
 
 ```{r, warning=F}
 file <- "t_values.txt"
@@ -189,7 +189,7 @@ p <- c(0.4, 0.25, 0.1, 0.05, 0.025, 0.01, 0.005, 0.0025, 0.001, 0.0005)
 m <- t(sapply(n, function(x) round(qt(p, x, lower.tail=F), 3)))
 rownames(m) <- as.character(n)
 colnames(m) <- as.character(p)
-cat(file=file, "# Quantili della distribuzione T\nDoF ")
+cat(file=file, "# Probabilità della distribuzione T\nDoF ")
 write.table(m, file, quote = F, sep="\t", append = TRUE)
 knitr::kable(head(m))
 ```
