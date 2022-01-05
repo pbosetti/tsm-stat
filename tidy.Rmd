@@ -481,7 +481,7 @@ ggplot(aes(x=x)) +
   geom_density(fill="red", alpha=0.2)
 ```
 
-**Nota**: in `aes()` la notazione `..density..` sta a indicare "applica la funzione `density` ai dati in ingresso".
+**Nota**: in `aes()` la notazione `..density..` sta a indicare "applica la *statistica* `density` ai dati in ingresso". Le statistiche disponibili sono elencate nella sezione *Computed variables* dell'help delle funzioni `stat_`.
 
 A volte si desidera una raffigurazione comparativa:
 
@@ -654,7 +654,7 @@ L'analisi dei sistemi multivariati richiede sempre particolare attenzione. Sono 
 
 In entrambi i casi le tecniche di *Design of Experiments* viste nella Parte 1 sono d'aiuto.
 
-![https://imgs.xkcd.com/comics/confounding_variables.png](confounding_variables.png){width=3in}
+![https://xkcd.com/2560/](confounding_variables.png){width=3in}
 
 ### Fattori confusi
 

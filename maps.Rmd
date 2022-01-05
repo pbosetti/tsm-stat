@@ -162,7 +162,7 @@ Ora inseriamo questi dati su una mappa tematica, indicando l'altezza sul mare co
 ```{r}
 tm_shape(tn_data) + 
   tm_borders() + 
-  tm_fill(col="supcom", title="Altezza") + 
+  tm_fill(col="supcom", title="Altitudine") + 
   tm_bubbles(size="Popolazione", title.size="Popolazione", alpha=1/2) +
   tm_compass(type = "arrow", position = c("left", "top")) +
   tm_scale_bar(position=c("left", "bottom"), bg.alpha=0.5)

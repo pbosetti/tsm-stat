@@ -53,6 +53,8 @@ Il significato dell'unità tempo base è arbitrario: se ad esempio indichiamo `s
 
 Le opzioni `end` o `deltat` possono essere indicate quando si vuole troncare il vettore di ingresso.
 
+![https://xkcd.com/2563/](throat_and_nasal_passages.png){width=3in}
+
 Come dati di esempio, carichiamo i dati della pandemia COVID-19 da [Our World in Data](https://ourworldindata.org):
 
 ```{r}
