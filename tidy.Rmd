@@ -755,7 +755,7 @@ p2 <- ggplot(diamonds2, aes(x=color, y=`residual price`)) + geom_boxplot() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
 p3 <- ggplot(diamonds2, aes(x=clarity, y=`residual price`)) + geom_boxplot() +
   theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
-plot_grid(p1, p2, p3, nrow=1)
+plot_grid(p1, p2, p3, nrow=1, align="h")
 ```
 
 E questi grafici, depurati dal fattore confuso `carat`, mostrano l'effettiva influenza di questi fattori sulla *componente residua del prezzo*.

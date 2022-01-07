@@ -107,6 +107,7 @@ c
   * logical: `TRUE`, `FALSE` (oppure `T` e `F`)
   * complex: `1+4i`
   * function: una *funzione*
+  * (raw: sequenza di bit)
 * Ogni istanza è intrinsecamente un vettore
 * Uno scalare è semplicemente un vettore di lunghezza 1
 
