@@ -645,6 +645,106 @@ autoplot(pred) +
   labs(x="Tempo", y="Passeggeri (/1000)")
 ```
 
+Riprendiamo ora i dati COVID-19 per illustrare alcuni dettagli dell'so di oggetti `xts` con ggplot:
+
+```{r}
+library(lubridate)
+library(scales)
+url <- "https://covid.ourworldindata.org/data/owid-covid-data.csv"
+datafile <- basename(url)
+if (!file.exists(datafile) | difftime(now(),  file.mtime(datafile), units="hours") > 24 ) {
+  print("Downloading new data from the Internet")
+  download.file(url, datafile)
+}
+covid <- read_csv(datafile) %>% 
+  filter(location=="Italy") %>% 
+  select(c("date", "new_cases", "new_deaths", "new_tests", "people_vaccinated_per_hundred", "positive_rate", "icu_patients")) 
+cts <- xts(select(covid, new_cases:icu_patients), order.by = covid$date)
+```
+
+Una delle utili funzionalità di `xts` è quella di semplificare l'applicazione di funzioni a sottoperiodi, ad esempio per sommarizzare l'andamento settimanale (non risentendo in questo caso della periodicità settimanale dei test). In questo caso, però, l'oggetto `cts` che abbiamo creato è *multivariato*, e le funzioni `apply.*` si applicano solo ad una colonna. Quindi bisogna procedere con alcuni accorgimenti:
+
+```{r}
+p1 <- apply.weekly(cts$new_cases, sum) %>% ggplot(aes(x=Index, y=new_cases)) +
+  geom_line() +
+  labs(x="", y="Nuovi casi/sett.") +
+  scale_x_date(date_breaks = "1 month", labels=label_date("%y.%b")) + 
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+p2 <- cbind(
+    apply.weekly(cts$new_deaths, sum),
+    apply.weekly(cts$icu_patients, sum)
+) %>% ggplot() +
+  geom_line(aes(x=Index, y=new_deaths, color="Decessi")) +
+  geom_line(aes(x=Index, y=icu_patients, color="T. intensiva")) +
+  labs(x="Data", y="Dati settimanali") +
+  scale_x_date(date_breaks = "1 month", labels=label_date("%y.%b")) + 
+  scale_color_manual(name="Metrica", values=c(2,3)) +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
+  theme(legend.position="bottom") 
+plot_grid(p1, p2, align="v", nrow=2) 
+```
+
+Come si vede, si può usare `cbind` per ricostruire un `xts` dopo aver applicato le funzioni di somma settimanale alle colonne di interesse.
+
+In questo modo si possono realizzare anche grafici abbastanza complessi, *localizzando ad esempio l'asse dei tempi*: 
+
+```{r}
+Sys.setlocale("LC_TIME", "it_IT.UTF-8")
+cbind(
+  apply.weekly(cts$new_tests, sum),
+  apply.weekly(cts$positive_rate, max)
+) %>% 
+  ggplot() +
+  geom_point(aes(x=Index, y=new_tests, size=positive_rate), pch=21, color="black", fill=gray(0.75)) +
+  geom_line(aes(x=Index, y=new_tests, color=positive_rate)) +
+  scale_color_viridis_c() +
+  scale_x_date(date_breaks = "1 month", labels=label_date("%y.%b")) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x="Data", y="Nuovi test/sett.", size="Positivi", color="Positivi")
+```
+
+Oltre che mediante la somma settimanale, i dati possono essere trattati anche mediante stimatori a finestra mobile di 7 giorni:
+
+```{r}
+ctsm <- rollmedian(cts, 7) 
+ctsm %>%
+  ggplot(aes(x=new_cases, y=positive_rate, color=new_tests)) +
+  geom_point(alpha=0.5) +
+  scale_color_viridis_b() +
+  labs(x="Nuovi casi", y="Positivi (%)", color="Nuovi test")
+```
+
+In questo caso particolare possiamo notare una clusterizzazione dei dati. Proviamo ad approfindire per capirne il motivo. Useremo la funzione base `cut` per assegnare un indice di classe in corrispondenza di un dato intervallo sul numero di test effettuati al giorno. Si noti inoltre che se vogliamo usare verbi `dplyr` su un ` xts` dobbiamo prima convertirlo in data frame mediante `fortify`: mentre infattiquesto passaggio è implicito in `ggplot`, non lo è nelle funzioni ` dplyr`.
+
+```{r}
+ctsm$cat <- cut(ctsm$new_tests, 
+               breaks=c(0, 100, 310, 500, 5000) * 1000)
+ctsm %>% fortify() %>%
+  filter(!is.na(new_tests)) %>%
+  ggplot(aes(x=new_cases, y=positive_rate, color=factor(cat))) +
+  geom_point(alpha=0.5) +
+  geom_smooth(method="lm") +
+  scale_x_continuous(labels=~.x/1000) +
+  scale_color_manual(values = c(2:6)) +
+  facet_wrap(~cat) +
+  labs(x="Nuovi casi (migliaia)", y="Positivi (%)", color="Nuovi test")
+```
+Cioè con numeri diversi di campioni ci sono diverse relazioni tra percentuale di positivi e nuovi casi individuati.
+
+Vediamo ora di vedere queste classi come sono mappate sul tempo:
+
+```{r}
+ctsm %>% fortify() %>%
+  filter(!is.na(new_tests)) %>%
+  ggplot(aes(x=Index, y=new_cases, color=factor(cat))) +
+  geom_point(alpha=0.5) +
+  scale_color_manual(values = c(2:6)) +
+  scale_x_date(date_breaks = "1 month", labels=label_date("%y.%b")) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x="Data", y="Nuovi casi", color="Classe") 
+```
+
+
 ## Diamanti grezzi!
 
 L'analisi dei sistemi multivariati richiede sempre particolare attenzione. Sono due i casi in cui l'analista può essere fuorviato dai dati:
