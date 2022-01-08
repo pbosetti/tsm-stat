@@ -230,13 +230,6 @@ team %>% filter(role.y=="attack")
 team[team$role.y=="attack",]
 ```
 
-```{r}
-mtcars %>% mutate(
-  kpl=round(mpg*0.621371/3.78541, 1),
-  lp100k=round(100/kpl, 1)) %>% 
-  rownames_to_column(var="Model") %>%
-  head
-```
 
 La libreria `purrr` mette inoltre a disposizione funzioni di mapping più comode rispetto alle equivalenti di R base (`lapply` e simili), ed hanno il vantaggio di ritornare sempre lo stesso tipo di oggetto, a differenza delle funzioni base, e quindi di essere più adatte alla programmazione:
 
@@ -817,7 +810,8 @@ diamonds2 <- diamonds %>%
 diamonds2 %>%
   ggplot(aes(x=lcarat, y=lprice)) +
   geom_hex(bins=50) + 
-  geom_smooth(method="lm", color="red")
+  geom_smooth(method="lm", color="red") +
+  scale_fill_viridis_c()
 ```
 
 È evidente un andamento lineare sul piano bilogaritmico. Ora possiamo creare un modello lineare sui dati trasformati e *sottrarlo* ai dati originali, in modo da poter studiare, indipendentemente dalla dimensione, l'effetto di colore, taglio e chiarezza sul prezzo.
@@ -832,7 +826,8 @@ fit <- diamonds2 %>%
 
 ggplot(diamonds2, aes(x=carat, y=price)) +
   geom_hex(bins=50) + 
-  geom_line(data=fit, color="red", size=2)
+  geom_line(data=fit, color="red", size=2) +
+  scale_fill_viridis_c()
 ```
 
 Ora aggiungiamo i residui a `diamonds2`:
@@ -841,9 +836,8 @@ Ora aggiungiamo i residui a `diamonds2`:
 (diamonds2 <- diamonds2 %>%
   add_residuals(diamonds2.lm, "residual price")) %>%
   ggplot(aes(x=lcarat, y=`residual price`)) + 
-    geom_hex(bins=50)
-
-
+    geom_hex(bins=50) +
+    scale_fill_viridis_c()
 ```
 
 Finalmente possiamo studiare l'effetto di taglio, colore e chiarezza:

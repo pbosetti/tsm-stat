@@ -624,7 +624,7 @@ Possiamo osservare la situazione mediante un box plot:
 ```{r}
 boxplot(Strength~Cotton, data=df)
 ```
-È evidente che almeno uno dei trattamenti è significatvo, ma quali di essi lo sono, reciprocamente? Come sopra detto è sconsigliabile effettuare coppie di test di Student, ma si può ottenere un'analisi più dettagliata mediante il **test di Tukey*.
+È evidente che almeno uno dei trattamenti è significatvo, ma quali di essi lo sono, reciprocamente? Come sopra detto è sconsigliabile effettuare coppie di test di Student, ma si può ottenere un'analisi più dettagliata mediante il **test di Tukey**.
 
 ## Test di Tukey
 
@@ -664,9 +664,9 @@ df.lm <- lm(Response~Material*Temperature, data=df)
 anova(df.lm)
 ```
 
-Come si vede, risultano significativi entrambi i fattori, anche se l'interazione lo è meno dei fattori stessi. si noti che *interazione* significa che *l'effetto di un fattore dipende dal livello dell'altro* (e viceversa).
+Come si vede, risultano significativi entrambi i fattori, anche se l'interazione lo è meno dei fattori stessi. Si noti che *interazione* significa che *l'effetto di un fattore dipende dal livello dell'altro* (e viceversa).
 
-Possiamo visualizzare gli effeti con un *interaction plot*:
+Possiamo visualizzare gli effetti con un *interaction plot*:
 
 ```{r}
 with(df, interaction.plot(Temperature, Material, Response, typ="b", col=2:4))
