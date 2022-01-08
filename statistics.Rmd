@@ -225,6 +225,16 @@ df <- read.table(mydata("diet.dat"), header=T)
 
 In particolare, l'opzione `header=T` specifica che i dati contengono i nomi delle colonne nella prima riga di intestazione.
 
+## Serializzazione
+
+A volte è utile *serializzare* una struttura dati, ovvero convertirla in un formato che può essere scritto su file e passato ad una differente sessione di R. Ciò può essere fatto nei seguenti modi:
+
+* `dump()`: converte un elenco di oggetti (passato come vettore di *nomi*) in una rappresentazione R e la salva su file (di default, `dumpdata.R`); questo file può essere ricaricato mediante `source()`
+* `save()`: salva uno o più oggetti in formato binario, ricaricabili con `load()`
+* `save.image()`: salva *tutto* l'ambiente in un file (default `.RData`): consente di chiudere la sessione e riavviare in seguito recuperando esattamente tutto quanto fatto precedentemente.
+
+Si noti che `save()` e `save.image()` non sono garantiti funzionare tra una versione e l'altra di R, e sono quindi sconsigliati per il salvataggio di dati a lungo termine.
+
 # Statistica descrittiva
 ## Stimatori
 
