@@ -25,11 +25,11 @@ course <- tribble(
   # "Richiami di statistica", 4, "slide pdf",
   "L'ambiente RStudio", 0.5, knitr::current_input(),
   "Il linguaggio R e richiami di statistica", 1.5, knitr::current_input(),
-  "Statistica base in R", 5, "statistics.Rmd",
-  "Modelli di regressione lineare e lineare generalizzata", 3, "reglin.Rmd",
-  "Serie temporali e modelli ARIMA", 4, "ARIMA.Rmd",
-  "*Tidyverse*", 4, "tidy.Rmd",
-  "Mappe e GIS", 3, "maps.Rmd"
+  "Statistica base in R", 5, "1-statistics.Rmd",
+  "Modelli di regressione lineare e lineare generalizzata", 3, "2-reglin.Rmd",
+  "Serie temporali e modelli ARIMA", 4, "3-ARIMA.Rmd",
+  "*Tidyverse*", 4, "4-tidy.Rmd",
+  "Mappe e GIS", 3, "5-maps.Rmd"
 )
 ```
 
@@ -42,7 +42,7 @@ cat("\n* **TOTALE: ", sum(course$hours), "h**")
 ```
 
 ## Note
-* Queste slide coprono solo la parte introduttiva ad R (2.--3.)
+* Queste slide coprono solo la parte introduttiva ad R (1.--2.)
 * Il resto è disponibile come notebook
 
 *Questa presentazione è realizzata in RStudio e sarà disponibile con il resto del materiale su github: <https://github.com/pbosetti/tsm-stat>.*
