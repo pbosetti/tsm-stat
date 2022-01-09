@@ -53,7 +53,7 @@ library(spData)
 library(spDataLarge)
 ```
 
-Come in GGPlot2, e mappe si costruiscono per strati, sommando differenti contributi provenienti da ogetti `sf`. A loro volta, gli oggeti `sf` sono dei data frame che contengono dati eterogenei con l'aggiunta di *feature* geometriche:
+Come in GGPlot2, e mappe si costruiscono per strati, sommando differenti contributi provenienti da oggetti `sf`. A loro volta, gli oggetti `sf` sono dei data frame che contengono dati eterogenei con l'aggiunta di *feature* geometriche:
 
 ```{r}
 nz %>% str # nz è l'esempio per la Nuova Zelanda fornito da spData
@@ -68,7 +68,7 @@ map_nz <- tm_shape(nz) +
 print(map_nz)
 ```
 
-La funzione `qtm()` semplifica le cose, e può essere combinata con altri dati `sf`; inoltre, un oggetto `sf` può contenere anche dati *raster* (altimetria, ortofoto, ecc.):
+La funzione `qtm()` semplifica le cose, e può essere combinata con altri dati `sf`; inoltre, un oggetto `sf` può contenere anche dati *raster* (altimetria, orto-foto, ecc.):
 
 ```{r}
 qtm(nz) + qtm(nz_elev) + qtm(nz_height)
@@ -100,7 +100,7 @@ map_nz3 <- map_nz2 +
 tmap_arrange(map_nz1, map_nz2, map_nz3)
 ```
 
-È interessante aggungere ad una mappa i metadati contenuti nell'oggetto `sf`:
+È interessante aggiungere ad una mappa i metadati contenuti nell'oggetto `sf`:
 
 ```{r}
 tm_shape(nz) + 
@@ -114,7 +114,7 @@ tm_shape(nz) +
 
 Vediamo di realizzare alcune mappe tematiche per il Trentino, attingendo a dati GIS open in formato *shapefile* (`.shp`), che può essere direttamente caricato come oggetto *simple feature*, `sf`:
 
-* Limiti amministrativi scaricati da (WebGIS)[https://webgis.provincia.tn.it/wgt/], in formato ESRI (.shp). Contengono sia i limiti comunali che delel comunità di valle;
+* Limiti amministrativi scaricati da (WebGIS)[https://webgis.provincia.tn.it/wgt/], in formato ESRI (.shp). Contengono sia i limiti comunali che delle comunità di valle;
 * Dati COVID-19 scaricati da (FBK)[https://covid19trentino.fbk.eu/data/stato_comuni_td.csv];
 * Dati estratti dal censimento 2011 per la **regione Trentino/Alto Adige**, formato tabulare senza dati geografici.
 
@@ -147,7 +147,7 @@ str(tn_data)
 
 Come si vede, ora `tn_data` contiene anche i dati COVID-19.
 
-Ripetiamo lo stesso con `stat` per recuperare la popolazione. In questo caso, i dati originari contengono più di un *caso* per lo stesso comune (uno per frazione). È quindi necessario sommare tutte le frazioni (cmapo `LOCALITA`) di uno stesso comune (campo `PROCOM`). Successivamente importiamo in `comuni` tutti i dati in cui `PROCOM` equivale a `istat`:
+Ripetiamo lo stesso con `stat` per recuperare la popolazione. In questo caso, i dati originari contengono più di un *caso* per lo stesso comune (uno per frazione). È quindi necessario sommare tutte le frazioni (campo `LOCALITA`) di uno stesso comune (campo `PROCOM`). Successivamente importiamo in `comuni` tutti i dati in cui `PROCOM` equivale a `istat`:
 
 ```{r}
 pop_data <- stat %>% group_by(PROCOM, COMUNE) %>% summarise(Popolazione=sum(P1))
@@ -193,7 +193,7 @@ tm_shape(tn_data) +
           title = "Superficie, per quartili:", 
           labels = c("primo", "secondo", "terzo", "quarto"))
 ```
-Il layer `tm_basemap()` consente di aggiungere una mappa base interattiva, scaricata dinamicamente da un provider di servizi, come Open Street Map. Perché questa funzionalità sia attiva, è necessario passare dalla modalità `"print"` (default) alla modalità `"view"`: l'ogetto grafico risultante è generato mediante JavaScript, è interattivo ma non è adatto alla stampa.
+Il layer `tm_basemap()` consente di aggiungere una mappa base interattiva, scaricata dinamicamente da un provider di servizi, come Open Street Map. Perché questa funzionalità sia attiva, è necessario passare dalla modalità `"print"` (default) alla modalità `"view"`: l'oggetto grafico risultante è generato mediante JavaScript, è interattivo ma non è adatto alla stampa.
 
 ```{r}
 tmap_mode("view") # Per usare tm_basemap

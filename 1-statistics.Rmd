@@ -45,7 +45,7 @@ R dispone di una completa serie di funzioni per la gestione di numeri casuali, d
 
 ## Distribuzioni di probabilità discrete
 
-Le distribuzioni discrete hanno valore solo sui numeri interi. Le più comuni sono `geom` (geometrica), `binom` (binomiale), `pois` (Poisson). I grafici vengoni generalmente riportati con linee verticali, usando l'opzione `typ="h"` nei comandi di plot:
+Le distribuzioni discrete hanno valore solo sui numeri interi. Le più comuni sono `geom` (geometrica), `binom` (binomiale), `pois` (Poisson). I grafici vengono generalmente riportati con linee verticali, usando l'opzione `typ="h"` nei comandi di plot:
 
 ```{r}
 x <- 1:20
@@ -56,7 +56,7 @@ plot(dgeom(x, prob=0.2),
      main="Densità di distribuzione geometrica")
 ```
 
-La CDF è invece preferibile plottarla a step, opzione `typ="s"`. Per chiarezza, confrontare il grafico otenuto con `typ="S"` (maiuscolo). 
+La CDF è invece preferibile plottarla a step, opzione `typ="s"`. Per chiarezza, confrontare il grafico ottenuto con `typ="S"` (maiuscolo). 
 
 Inoltre, ricordarsi che la CDF della variabile casuale $X$ può riportare la coda alta (upper tail):
 $$
@@ -119,9 +119,9 @@ curve(qnorm(x), from=0.001, to=0.999, n=1000,
 abline(h=0, lty=2)
 abline(v=c(-1, 0, 1), lty=2)
 ```
-Si noti l'uso della funzione `TeX` della librera `latex2exp` per inserire formule nelle etichette dei grafici ($f^{-1}(p)$).
+Si noti l'uso della funzione `TeX` della libreria `latex2exp` per inserire formule nelle etichette dei grafici ($f^{-1}(p)$).
 
-Le funzioni che cominciano con `r` sono utili per *generare* vettori di numeri casuali. Per ottenere sempre la setessa sequenza pseudo-casuale si può impostare un seme:
+Le funzioni che cominciano con `r` sono utili per *generare* vettori di numeri casuali. Per ottenere sempre la stessa sequenza pseudo-casuale si può impostare un seme:
 
 ```{r}
 set.seed(123)
@@ -151,7 +151,7 @@ abline(h=0, col="red", lty=1)
 
 Si noti che i dati sono stati generati non con un ciclo `for` ma con la funzione `sapply`: laddove possibile, le funzioni di mappatura sono sempre più veloci di un ciclo.
 
-Vediamo ora come utilizzare i data frame per realizzare struture dati più complesse:
+Vediamo ora come utilizzare i data frame per realizzare strutture dati più complesse:
 
 ```{r}
 df <- data.frame(x=seq(-4,4,0.1))
@@ -181,7 +181,7 @@ La prima soluzione non permette lo scambio dati con altri software. La seconda s
 
 In particolare, `cat()` e `write.table()` possono essere usate in sequenza per salvare una tabella anticipata da qualche riga di commento.
 
-Creiamo una tabella delle probabilità cumulate della distribuzione T. Per inciso, simili tabelle erano utilizzate per effetuare i T-test prima dell'avvento dei calcolatori.
+Creiamo una tabella delle probabilità cumulate della distribuzione T. Per inciso, simili tabelle erano utilizzate per effettuare i T-test prima dell'avvento dei calcolatori.
 
 ```{r, warning=F}
 file <- "t_values.txt"
@@ -197,7 +197,7 @@ knitr::kable(head(m))
 
 Come si vede, `cat()` oltre che per stampare stringhe in standard output può essere utilizzato per scrivere su file: è sufficiente passare il parametro `file`.
 
-La matrice `m` può anche essere convertita in data frame per maggiore comodità, e esportata i ìn formato di interscambio CSV. Si noti comunque che `write.csv()` supporta in input sia matrici che data frame.
+La matrice `m` può anche essere convertita in data frame per maggiore comodità, e esportata in formato di interscambio CSV. Si noti comunque che `write.csv()` supporta in input sia matrici che data frame.
 
 ```{r}
 df <- as.data.frame(m)
@@ -205,11 +205,11 @@ write.csv(df, file="t_values_en.csv")
 write.csv2(df, file="t_values_it.csv")
 ```
 
-Si noti che `write.csv()` usa la virgola come separatore di campo e il punto come separatore dei decimali, mentre `write.csv2()` usa il punto e virgola come separatore di campo e la vorgola come separatore dei decimali. Quindi, `write.csv2()` è da usarsi se si intende importare il file creato, ad esempio, in versioni di Excel localizzate in Italiano o in lingue che usano la vorgola come separatore decimale.
+Si noti che `write.csv()` usa la virgola come separatore di campo e il punto come separatore dei decimali, mentre `write.csv2()` usa il punto e virgola come separatore di campo e la virgola come separatore dei decimali. Quindi, `write.csv2()` è da usarsi se si intende importare il file creato, ad esempio, in versioni di Excel localizzate in Italiano o in lingue che usano la  come separatore decimale.
 
 ## Leggere da file
 
-La lettura da file di testo libero può essere effettuata medante la funzione `scan()`. Tuttavia nella maggior parte dei casi è sufficiente leggere tabelle ASCII o csv. In questo caso si usano le funzioni `read.table()` o `read.csv()`/`read.csv2()`. Si noti che in questo caso la stringa che specifica il percorso di origine è un URI generico, quindi può essere sia un file locale che un percorso HTTP o HTTPS:
+La lettura da file di testo libero può essere effettuata mediante la funzione `scan()`. Tuttavia nella maggior parte dei casi è sufficiente leggere tabelle ASCII o csv. In questo caso si usano le funzioni `read.table()` o `read.csv()`/`read.csv2()`. Si noti che in questo caso la stringa che specifica il percorso di origine è un URI generico, quindi può essere sia un file locale che un percorso HTTP o HTTPS:
 
 ```{r}
 df <- read.table("http://repos.dii.unitn.it:8080/data/diet.dat", header=T)
@@ -273,7 +273,7 @@ mymode <- function(x) {
 mymode(l)
 ```
 
-Si noti che la funzione `mode()` già esiste e ritorna lo *storage mode* di un oggetto. Inoltre, si noti che `mymode()` restituisce *il primo* elemento più frequente, tralasciando eventuali parimerito. In genere, è opportuno ordinare il vettore in modo da restituire il più comune e più grande (o più piccolo) elemento:
+Si noti che la funzione `mode()` già esiste e ritorna lo *storage mode* di un oggetto. Inoltre, si noti che `mymode()` restituisce *il primo* elemento più frequente, tralasciando eventuali pari merito. In genere, è opportuno ordinare il vettore in modo da restituire il più comune e più grande (o più piccolo) elemento:
 
 ```{r}
 mymode(sort(l, decreasing = T))
@@ -323,7 +323,7 @@ c(cor(x1, x2), cor(x1, x3))
 
 ## Metodi grafici
 
-È spesso utile rappresentare un vettore di dati casuali mediante metodi grafici. Possiamo utilizzare un diagramma a dispersione per visalizzare l'andamento ed evidenziare eventuali tendenze, e un istogramma per studiarne la distribuzione. La funzione kernel densty è inoltre una versione continua dell'istogramma, molto utile quando la dimensione del campione è molto grande.
+È spesso utile rappresentare un vettore di dati casuali mediante metodi grafici. Possiamo utilizzare un diagramma a dispersione per visualizzare l'andamento ed evidenziare eventuali tendenze, e un istogramma per studiarne la distribuzione. La funzione *kernel densty* è inoltre una versione continua dell'istogramma, molto utile quando la dimensione del campione è molto grande.
 
 ```{r}
 set.seed(123)
@@ -333,7 +333,7 @@ plot(v)
 abline(h=quantile(v), col="gray", lty=2)
 abline(h=mean(v), col="red")
 ```
-La serie non mostra tendenze o pattern (ovviamente!) e studiando i quantili osserviamo che la distribuzione appare leggermente gobab a sinistra, dato che la mediana è leggermente più bassa della media.
+La serie non mostra tendenze o pattern (ovviamente!) e studiando i quantili osserviamo che la distribuzione appare leggermente gobba a sinistra, dato che la mediana è leggermente più bassa della media.
 
 L'istogramma è creato dalla funzione `hist()`. Il numero di canne, o *bin*, in un istogramma è controllato dall'argomento `breaks`, che accetta o un vettore di punti di interruzione, o il nome dell'algoritmo (`"Sturges", "Scott", "FD"/"Freedman-Diaconis"`).
 
@@ -360,7 +360,7 @@ qqnorm(vu, main="Campione uniforme")
 qqline(vu, col="red")
 ```
 
-Nel caso di campioni bivariati o multivariati uno strumento molto utile per l'osservazione preliminare dei dati è il boxplot. Carichiamo i dati che riportano il tempo di reazione di un processo chimico in funzione di due diversi *trattamenti*, cioè condizioni di processo:
+Nel caso di campioni bi-variati o multi-variati uno strumento molto utile per l'osservazione preliminare dei dati è il boxplot. Carichiamo i dati che riportano il tempo di reazione di un processo chimico in funzione di due diversi *trattamenti*, cioè condizioni di processo:
 
 ```{r}
 df <- read.table(mydata("twosample.dat"), header=T)
@@ -377,7 +377,7 @@ L'interfaccia più comoda utilizza una *formula*: `yield~treat` significa "plott
 
 Tanto più due box sono sfalsati, tanto più è probabile che le due classi siano significativamente distinti, e viceversa. Un'analisi più dettagliata di cosa vuol dire "significativamente distinti" richiede ovviamente l'introduzione di un **test di inferenza**.
 
-A volte è utile reaizzare un *diagramma di Pereto* per visualizzare la distribuzione cumulativa. La libreria `qcc` mette a disposizione il la funzione `pareto.chart()`:
+A volte è utile realizzare un *diagramma di Pereto* per visualizzare la distribuzione cumulativa. La libreria `qcc` mette a disposizione il la funzione `pareto.chart()`:
 
 ```{r}
 library(qcc)
@@ -392,7 +392,7 @@ Da cui si vede, ad esempio, che i primi due elementi, `f` e `c`, sono responsabi
 
 # Statistica inferenziale
 
-Fare inferenza significa estendere l'osserazione di un campione al comportamento dell'intera popolazione. Il più semplice test di inferenza è il test di Student, che studia la *media* di un campione. Ogni test di inferenza, per complicato che sia, si conclude sempre nel calcolare la probabilità di errore, detta *p-value*, di commettere un errore di tipo I, ossia rifiutare l'ipotesi nulla (non-significatività) quando essa è invece vera.
+Fare inferenza significa estendere l'osservazione di un campione al comportamento dell'intera popolazione. Il più semplice test di inferenza è il test di Student, che studia la *media* di un campione. Ogni test di inferenza, per complicato che sia, si conclude sempre nel calcolare la probabilità di errore, detta *p-value*, di commettere un errore di tipo I, ossia rifiutare l'ipotesi nulla (non-significatività) quando essa è invece vera.
 
 ## Test di Student
 ### A un campione
@@ -480,7 +480,7 @@ Questa coppia di test mi conferma quindi che:
 
 ### T-test accoppiato
 
-Spesso è utile raggruppare le osservazioni dei due campioni a due a due, in modo da escludere effetti ambientali ignote e incontrollate. È il caso ad esempio di quando si voglia confrontare la differente efficacia di due strumenti *indipendentemente dall'abiente in cui operano*, che si sa poter essere non costante.
+Spesso è utile raggruppare le osservazioni dei due campioni a due a due, in modo da escludere effetti ambientali ignote e incontrollate. È il caso ad esempio di quando si voglia confrontare la differente efficacia di due strumenti *indipendentemente dall'ambiente in cui operano*, che si sa poter essere non costante.
 
 Supponiamo ad esempio di voler confrontare la velocità di penetrazione di due diverse trivelle per prospezioni geologica, pur sapendo che essa dipende dalle caratteristiche del terreno, che sono a priori ignote e che possono cambiare localmente quando la distanza tra due perforazioni è superiore alla distanza minima tra due perforazioni.
 
@@ -515,9 +515,9 @@ Come si vede, mentre il test normale non dà significatività, il test accoppiat
 
 Il test di Student mi fornisce solo la probabilità di un errore di tipo I, detta $\alpha$, corrispondente a un *falso positivo*. È utile però avere anche la probabilità di commettere un errore di tipo II, $\beta$, corrispondente ad un *falso negativo* o mancato allarme. Il complemento a 1 è noto come *potenza* di un test, ed è la sua affidabilità.
 
-È evidente che la potenza di un test dipende dalla dimensione del campione: più piccolo è il campione, più assa sarà la potenza a pari condizioni.
+È evidente che la potenza di un test dipende dalla dimensione del campione: più piccolo è il campione, più bassa sarà la potenza a pari condizioni.
 
-Si costruicono quindi le cosiddette *curve caratteristiche operative* (OCC), che riportano la potenza o il suo complemento a 1 per un test effettuato su due campioni con una determinata dimensione e una data differenza tra le medie in rapporto alla varianza.
+Si costruiscono quindi le cosiddette *curve caratteristiche operative* (OCC), che riportano la potenza o il suo complemento a 1 per un test effettuato su due campioni con una determinata dimensione e una data differenza tra le medie in rapporto alla varianza.
 
 Queste curve possono essere calcolate e costruite in R mediante le funzioni della famiglia `power.*.test()`. Per un T-test, ad esempio:
 
@@ -553,9 +553,9 @@ H_0:&\mu_i = \mu_j~~\forall i\neq j \\
 H_1:&\exists (i,j)~|~\mu_i \neq \mu_j
 \end{eqnarray*}
 
-Si noti che il test *non dice* quali delle coppie di trattamenti $(i,j)$ siano statistiamente differenti, ma solo che c'è *almeno* una coppia che lo è.
+Si noti che il test *non dice* quali delle coppie di trattamenti $(i,j)$ siano statisticamente differenti, ma solo che c'è *almeno* una coppia che lo è.
 
-Vediamo come efettuare ANOVA in R su un dataset che contiene i valori di resistenza a trazione di filati misti in funzione di differenti percentuali di fibre di cotone. Il trattamento, in questo caso, è la percentuale di fibre di cotone nel filato.
+Vediamo come effettuare ANOVA in R su un dataset che contiene i valori di resistenza a trazione di filati misti in funzione di differenti percentuali di fibre di cotone. Il trattamento, in questo caso, è la percentuale di fibre di cotone nel filato.
 
 ```{r}
 df <- read.table(mydata("cotton.dat"), header=T)
@@ -601,7 +601,7 @@ df.lm <- lm(Strength~Cotton, data=df)
 anova(df.lm)
 ```
 
-**ATENZIONE**: la prima cosa da verificare, in questi casi, è sempre il numero di gradi di libertà. Dalla teoria sappiamo che il numero di gradi di libertà del trattamento è $1-n$, nel nostro caso 4, mentre la tabella riporta 1. Ciò è dovuto al fatto che la colonna `Cotton` è di tipo `int`: in questi casi, R assume che non sia una variabile di raggruppamento, ma una variabile numerica veera e propria che nel nostro caso solo incideltalmente assume valori uguali 5 a 5.
+**ATENZIONE**: la prima cosa da verificare, in questi casi, è sempre il numero di gradi di libertà. Dalla teoria sappiamo che il numero di gradi di libertà del trattamento è $1-n$, nel nostro caso 4, mentre la tabella riporta 1. Ciò è dovuto al fatto che la colonna `Cotton` è di tipo `int`: in questi casi, R assume che non sia una variabile di raggruppamento, ma una variabile numerica vera e propria che nel nostro caso solo incidentalmente assume valori uguali 5 a 5.
 
 Per un'analisi della varianza, invece, `Cotton` dovrebbe rappresentare puramente una variabile categorica, detta *fattore*. Possiamo convertirla mediante la funzione `factor()`:
 
@@ -625,7 +625,7 @@ Possiamo osservare la situazione mediante un box plot:
 ```{r}
 boxplot(Strength~Cotton, data=df)
 ```
-È evidente che almeno uno dei trattamenti è significatvo, ma quali di essi lo sono, reciprocamente? Come sopra detto è sconsigliabile effettuare coppie di test di Student, ma si può ottenere un'analisi più dettagliata mediante il **test di Tukey**.
+È evidente che almeno uno dei trattamenti è significativo, ma quali di essi lo sono, reciprocamente? Come sopra detto è sconsigliabile effettuare coppie di test di Student, ma si può ottenere un'analisi più dettagliata mediante il **test di Tukey**.
 
 ## Test di Tukey
 
@@ -645,7 +645,7 @@ Le altre differenze sono invece **non significative**.
 
 ## ANOVA a due vie
 
-È naturale estendere l'analisi della varianza a casi multivariati, in cui abbiamo due o più fattori, ciascuno con due o più trattamenti. Nel caso a due fattori con $a$ e $b$ trattamenti (o livelli) il modello statistico è:
+È naturale estendere l'analisi della varianza a casi multi-variati, in cui abbiamo due o più fattori, ciascuno con due o più trattamenti. Nel caso a due fattori con $a$ e $b$ trattamenti (o livelli) il modello statistico è:
 $$
 y_{ijk} = \alpha_i + \beta_j + (\alpha\beta)_{ij} + \epsilon_{ijk}, ~~ i=1\dots a,~j=1\dots b,~j=1\dots r
 $$
@@ -656,7 +656,7 @@ df <- read.table(mydata("battery.dat"), header=T)
 str(df)
 ```
 
-Il data frame contiene i risultati di un esperimento che sudia l'effetto di differenti elettroliti (colonna `Material`) e differenti temperature di esercizio (colonna `Temperature`) sul tempo di scarica di una batteria (colonna `Response`). Materiale e temperatura sono entrambi variabili categoriche, quindi vanno convertite in fattori prima di effettuare l'analisi della varianza:
+Il data frame contiene i risultati di un esperimento che studia l'effetto di differenti elettroliti (colonna `Material`) e differenti temperature di esercizio (colonna `Temperature`) sul tempo di scarica di una batteria (colonna `Response`). Materiale e temperatura sono entrambi variabili categoriche, quindi vanno convertite in fattori prima di effettuare l'analisi della varianza:
 
 ```{r}
 df$Material <- factor(df$Material)
@@ -690,7 +690,7 @@ Dalle tabelle si deduce che a 15°C e a 125°C il materiale è ininfluente, ment
 
 L'analisi di varianza assume come ipotesi la normalità dei residui. È un'ipotesi abbastanza debole, nel senso che il test statistico su cui si basa ANOVA (un F-test) è robusto a modeste deviazioni dalla normalità. Tuttavia è sempre opportuno *verificare* che i residui siano *normali* e *privi di pattern*.
 
-La *normalità* dei residui può essere verificata sia con metodi grafici che con test di inferenza. I test più comuni sono il test del Chi-quadro e il test di Shapiro-Wilk. Quest'ultimo è il più semplice da effetuare in R:
+La *normalità* dei residui può essere verificata sia con metodi grafici che con test di inferenza. I test più comuni sono il test del Chi-quadro e il test di Shapiro-Wilk. Quest'ultimo è il più semplice da effettuare in R:
 
 ```{r}
 shapiro.test(residuals(df.lm))
@@ -753,7 +753,7 @@ ks.test(rnorm(100, mean=1), rnorm(100, mean=1.5))
 
 Per brevità considereremo qui solo i casi di un piano fattoriale completo e di uno frazionato, entrambi non replicati. Casi più semplici (piani non frazionati) possono essere dedotti facilmente da questo caso più completo.
 
-Realizzare e analizzare un esperimento fatoriale richiede i seguenti passi:
+Realizzare e analizzare un esperimento fattoriale richiede i seguenti passi:
 
 1. definizione dei *fattori* e dei loro livelli
 2. scelta del frazionamento e del numero di repliche

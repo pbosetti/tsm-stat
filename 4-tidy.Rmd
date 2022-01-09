@@ -82,7 +82,7 @@ Le librerie che fanno parte di Tidyverse possono essere caricate individualmente
 
 ## Strutture dati
 
-Le librerie Tidyverse si aspettano i dati in formato *tidy*, cioè un'osservazione per riga, un osservando per colonna. I dati sono tipicamente contenuti in data frame o, preferibilmente, nella nuova classe `tibble`, che è per lo più interscambiabile con i data frame, dato che ne eredita la classe. Una `tibble` può essere creata convertendo un data frame, oppure passando i dati per colonne (come per la funzione `data.frame()`), oppure ancora passando i dati **per righe**, medante la funzione `tribble()` (notare la `r`, per *rows*):
+Le librerie Tidyverse si aspettano i dati in formato *tidy*, cioè un'osservazione per riga, un osservando per colonna. I dati sono tipicamente contenuti in data frame o, preferibilmente, nella nuova classe `tibble`, che è per lo più interscambiabile con i data frame, dato che ne eredita la classe. Una `tibble` può essere creata convertendo un data frame, oppure passando i dati per colonne (come per la funzione `data.frame()`), oppure ancora passando i dati **per righe**, mediante la funzione `tribble()` (notare la `r`, per *rows*):
 
 ```{r}
 n <- 10
@@ -116,7 +116,7 @@ tb
 
 La libreria `readr` mette a disposizione:
 
-* `read_csv()`/`read_csv2()`: comma separated (CSV) files
+* `read_csv()`/`read_csv2()`: comma separated value (CSV) files
 * `read_tsv()`: tab separated files
 * `read_delim()`: general delimited files
 * `read_fwf()`: fixed width files
@@ -137,9 +137,9 @@ Ovviamente esistono anche le controparti `write_*()`, che accettano come primo a
 
 La libreria `dplyr` mette a disposizione un'ampia scelta di funzioni per la manipolazione di tabelle e `tibble`. In generale, queste funzioni semplificano e rendono più leggibili operazioni che sarebbero comunque realizzabili mediante approcci più standard, anche se con più passaggi e in maniera meno efficiente.
 
-Nella nomenclatura tidy, una `tibble` contiene una o più *variabili* (colonne), ciscuna con valori per uno o più *casi* (righe). Secondo questa convenzione, le principali funzioni di `dplyr` sono:
+Nella nomenclatura tidy, una `tibble` contiene una o più *variabili* (colonne), ciascuna con valori per uno o più *casi* (righe). Secondo questa convenzione, le principali funzioni di `dplyr` sono:
 
-* `mutate()` aggiunge nuove veriabili, funzione di variabili esistenti
+* `mutate()` aggiunge nuove variabili, funzione di variabili esistenti
 * `select()` seleziona variabili in base al oro nome
 * `filter()` seleziona casi in base al loro valore
 * `summarise()` riconduce più valori ad un unico indicatore
@@ -258,7 +258,7 @@ list(n=n, mean=mu, sd=sigma) %>%
   str
 ```
 
-Se tutti gli argimenti hanno la stessa lunghezza si può usare anche un data frame:
+Se tutti gli argomenti hanno la stessa lunghezza si può usare anche un data frame:
 
 ```{r}
 params <- tribble(
@@ -289,7 +289,7 @@ La versione `glue_data()` è fatta per accettare *pipe*:
 head(mtcars) %>% glue_data("{rownames(.)} has {hp} hp")
 ```
 
-La libreria `stringr` offre numerose funzioni, tra cui le più utili sono quelle per spezzare, per cambiare *case* (maiuscolo/minuscolo) e per efettuare il *pattern matching* con espressioni regolari.
+La libreria `stringr` offre numerose funzioni, tra cui le più utili sono quelle per spezzare, per cambiare *case* (maiuscolo/minuscolo) e per effettuare il *pattern matching* con espressioni regolari.
 Per queste ultime, è utile installare l'add-in di RStudio `RegExplain`:
 
 ```{r eval=FALSE}
@@ -397,7 +397,7 @@ gp +
 
 In GGplot2 ci sono due modi per modificare i limiti degli assi:
 
-1. *rimuovendo* i dati esterni ad un intervallo: quiesto modifica il set di dati iniziali, e quindi cambia il comportamento di funzioni come `geom_smooth()`
+1. *rimuovendo* i dati esterni ad un intervallo: questo modifica il set di dati iniziali, e quindi cambia il comportamento di funzioni come `geom_smooth()`
 2. *zoomando* sul grafico, mantenendo intatto il set di dati.
 
 ```{r, warning=FALSE}
@@ -531,7 +531,7 @@ df <- tibble::tibble(
 )
 ```
 
-Il *subsetting* viene effettuato mediante le funzioni `resample()` e `resample_partition()`. Esse ritornano oggetti `resample`, che contengono solo la lista degli indici campionati e un *puntatore* ai dati originali; in questo modo, ricampionamenti successivi su larghe quantità di dati sono più efficienti:
+Il *subsetting* viene effettuato mediante le funzioni `resample()` e `resample_partition()`. Esse ritornano oggetti `resample`, che contengono solo la lista degli indici campionati e un *puntatore* ai dati originali; in questo modo, ri-campionamenti successivi su larghe quantità di dati sono più efficienti:
 
 ```{r}
 df1 <- resample(df, sample(seq_along(df$x), 10)) # 10 elementi casuali
@@ -620,7 +620,7 @@ gp +
 ```
 In conclusione, è opportuno ricordarsi quanto segue:
 
-* le funzioni ARIMA supportano gli oggetti `ts`, *e non* gli oggetti `xts`: se si passa un `xts` a `arima()` esso viene convertito in un `data.frame`, perdendo l'informazione teporale. È quindi **sempre opportuno convertire un `xts` mediante la funzione `tsbox::ts_ts()`**;
+* le funzioni ARIMA supportano gli oggetti `ts`, *e non* gli oggetti `xts`: se si passa un `xts` a `arima()` esso viene convertito in un `data.frame`, perdendo l'informazione temporale. È quindi **sempre opportuno convertire un `xts` mediante la funzione `tsbox::ts_ts()`**;
 * viceversa, GGplot2 opera su oggetti `xts` **e non su `ts`**; gli oggetti `xts` vengono convertiti in `tibble` automaticamente invocando la funzione `ggplot2::fortify()`;
 * la predizione restituisce un oggetto `predict`, che al suo interno contiene `ts` per il fit, la predizione e gli intervalli di confidenza. Per essere plottati essi devono prima essere convertiti nuovamente in un `xts` mediante `tsbox::ts_xts()`.
 
@@ -639,7 +639,7 @@ autoplot(pred) +
   labs(x="Tempo", y="Passeggeri (/1000)")
 ```
 
-Riprendiamo ora i dati COVID-19 per illustrare alcuni dettagli dell'so di oggetti `xts` con ggplot:
+Riprendiamo ora i dati COVID-19 per illustrare alcuni dettagli dell'uso di oggetti `xts` con ggplot:
 
 ```{r}
 library(lubridate)
@@ -656,7 +656,7 @@ covid <- read_csv(datafile) %>%
 cts <- xts(select(covid, new_cases:icu_patients), order.by = covid$date)
 ```
 
-Una delle utili funzionalità di `xts` è quella di semplificare l'applicazione di funzioni a sottoperiodi, ad esempio per sommarizzare l'andamento settimanale (non risentendo in questo caso della periodicità settimanale dei test). In questo caso, però, l'oggetto `cts` che abbiamo creato è *multivariato*, e le funzioni `apply.*` si applicano solo ad una colonna. Quindi bisogna procedere con alcuni accorgimenti:
+Una delle utili funzionalità di `xts` è quella di semplificare l'applicazione di funzioni a sotto-periodi, ad esempio per sommarizzare l'andamento settimanale (non risentendo in questo caso della periodicità settimanale dei test). In questo caso, però, l'oggetto `cts` che abbiamo creato è *multi-variato*, e le funzioni `apply.*` si applicano solo ad una colonna. Quindi bisogna procedere con alcuni accorgimenti:
 
 ```{r}
 p1 <- apply.weekly(cts$new_cases, sum) %>% ggplot(aes(x=Index, y=new_cases)) +
@@ -708,7 +708,7 @@ ctsm %>%
   labs(x="Nuovi casi", y="Positivi (%)", color="Nuovi test")
 ```
 
-In questo caso particolare possiamo notare una clusterizzazione dei dati. Proviamo ad approfindire per capirne il motivo. Useremo la funzione base `cut` per assegnare un indice di classe in corrispondenza di un dato intervallo sul numero di test effettuati al giorno. Si noti inoltre che se vogliamo usare verbi `dplyr` su un ` xts` dobbiamo prima convertirlo in data frame mediante `fortify`: mentre infattiquesto passaggio è implicito in `ggplot`, non lo è nelle funzioni ` dplyr`.
+In questo caso particolare possiamo notare una clusterizzazione dei dati. Proviamo ad approfondire per capirne il motivo. Useremo la funzione base `cut` per assegnare un indice di classe in corrispondenza di un dato intervallo sul numero di test effettuati al giorno. Si noti inoltre che se vogliamo usare verbi `dplyr` su un ` xts` dobbiamo prima convertirlo in data frame mediante `fortify`: mentre infatti questo passaggio è implicito in `ggplot`, non lo è nelle funzioni ` dplyr`.
 
 ```{r}
 ctsm$cat <- cut(ctsm$new_tests, 
@@ -741,7 +741,7 @@ ctsm %>% fortify() %>%
 
 ## Diamanti grezzi!
 
-L'analisi dei sistemi multivariati richiede sempre particolare attenzione. Sono due i casi in cui l'analista può essere fuorviato dai dati:
+L'analisi dei sistemi multi-variati richiede sempre particolare attenzione. Sono due i casi in cui l'analista può essere fuorviato dai dati:
 
 1. fattori confusi
 2. fattori non ortogonali
@@ -774,7 +774,7 @@ p2 <- ggplot(diamonds, aes(x=clarity, y=price)) +
   labs(x="Chiarezza", y="Prezzo")
 plot_grid(p1, p2)
 ```
-In questo caso i diamanti peggiori sono di colore `J` (giallognoli) e chiarezza `I1`, cioè con inclusioni visibili a occhio nudo. **Eppure sono tra i più cari. Perchè?**
+In questo caso i diamanti peggiori sono di colore `J` (giallognoli) e chiarezza `I1`, cioè con inclusioni visibili a occhio nudo. **Eppure sono tra i più cari. Perché?**
 
 Il motivo di questa conclusione fuorviante è che stiamo trascurando un fattore confuso: la dimensione (`carat`).
 
@@ -815,7 +815,7 @@ diamonds2 %>%
   scale_fill_viridis_c()
 ```
 
-È evidente un andamento lineare sul piano bilogaritmico. Ora possiamo creare un modello lineare sui dati trasformati e *sottrarlo* ai dati originali, in modo da poter studiare, indipendentemente dalla dimensione, l'effetto di colore, taglio e chiarezza sul prezzo.
+È evidente un andamento lineare sul piano bi-logaritmico. Ora possiamo creare un modello lineare sui dati trasformati e *sottrarlo* ai dati originali, in modo da poter studiare, indipendentemente dalla dimensione, l'effetto di colore, taglio e chiarezza sul prezzo.
 
 ```{r}
 diamonds2.lm <- lm(lprice~lcarat, data=diamonds2)
@@ -861,7 +861,7 @@ E questi grafici, depurati dal fattore confuso `carat`, mostrano l'effettiva inf
 
 In certi casi l'interazione tra due fattori rilevata da un'analisi ANOVA significa che si sono scelti fattori correlati.
 
-Consideriamo l'esempio di un processo di stampa 3D a deposizione di fuso (FDM): due importanti parametri della macchina sono la velocità di estrusione (mm$^3$/min) e la velocità di spostamento della testina (mm/min). Carichiamo i dati di un piano fattoriale a due livelli, ripetuto tre volte, per i due fattori `Extr` e `Feed`, in cui la resa è la rsistenza del materiale.
+Consideriamo l'esempio di un processo di stampa 3D a deposizione di fuso (FDM): due importanti parametri della macchina sono la velocità di estrusione (mm$^3$/min) e la velocità di spostamento della testina (mm/min). Carichiamo i dati di un piano fattoriale a due livelli, ripetuto tre volte, per i due fattori `Extr` e `Feed`, in cui la resa è la resistenza del materiale.
 
 ```{r}
 df <- read_delim(mydata("3dprint.txt"), comment="#", col_types = c(rep="i", Feed="d", Extr="d"))

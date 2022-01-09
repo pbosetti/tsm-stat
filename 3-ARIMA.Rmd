@@ -45,12 +45,12 @@ source("myfunctions.R")
 
 Le serie temporali vengono create con la funzione nativa `ts(data, start, end, frequency)`, dove:
 
-* `data` è un vettore di dati equispaziati nel tempo
+* `data` è un vettore di dati equi-spaziati nel tempo
 * `start` è la data della prima osservazione
 * `end` è la data dell'ultima osservazione
-* `frequency` è il numero di osservaizoni per unità temporale
+* `frequency` è il numero di osservazioni per unità temporale
 
-Il significato dell'unità tempo base è arbitrario: se ad esempio indichiamo `start=2019` e `frequency=12` significa che i dati partono dal 2019 e hanno cadenza mensile. È possibile indicare `start=c(2019,6)` per stabilire che il primo dato è di Giugno 2019. **NOTA**: `start` deve essere o uno scalare o un vettore di due elementi, nel cui caso il secondo elemento è l'indice (base 1) del sottoperiodo quando `frequency` è maggiore di 1.
+Il significato dell'unità tempo base è arbitrario: se ad esempio indichiamo `start=2019` e `frequency=12` significa che i dati partono dal 2019 e hanno cadenza mensile. È possibile indicare `start=c(2019,6)` per stabilire che il primo dato è di Giugno 2019. **NOTA**: `start` deve essere o uno scalare o un vettore di due elementi, nel cui caso il secondo elemento è l'indice (base 1) del sotto-periodo quando `frequency` è maggiore di 1.
 
 Le opzioni `end` o `deltat` possono essere indicate quando si vuole troncare il vettore di ingresso.
 
@@ -68,7 +68,7 @@ if (!file.exists(datafile) | difftime(now(),  file.mtime(datafile), units="hours
 covid <- read.csv(datafile)
 ```
 
-Dell'intero set di dati filtriamo e selezioniamo solo i nuovi casi per milione in Italia, cotruendo poi un oggetto time series. Usiamo la libreria `lubridate` per semplificare la gestione delle date:
+Dell'intero set di dati filtriamo e selezioniamo solo i nuovi casi per milione in Italia, costruendo poi un oggetto time series. Usiamo la libreria `lubridate` per semplificare la gestione delle date:
 
 ```{r warning=FALSE}
 st <- decimal_date(ymd(covid[covid$location=="Italy",]$date[1]))
@@ -98,7 +98,7 @@ cat("Data POSIX: "); print(date_decimal(c(start(cpm), end(cpm))))
 
 ## Multivarate time series
 
-È possibile creare oggetti timeseries multivariati, passando all'argomento `data` una matrice con più colonne:
+È possibile creare oggetti timeseries multi-variati, passando all'argomento `data` una matrice con più colonne:
 
 ```{r warning=FALSE}
 cpmv <- ts(
@@ -146,7 +146,7 @@ cpmm <- apply.weekly(ts_xts(cpm), sum)
 plot(cpmm)
 ```
 
-Ora `cpmm` è un oggetto `xts`: la converisone di nuovo verso `ts` può essere fatta così:
+Ora `cpmm` è un oggetto `xts`: la conversione di nuovo verso `ts` può essere fatta così:
 
 ```{r}
 cpmm <- ts(coredata(cpmm), 
@@ -164,7 +164,7 @@ cpmx <- xts(covid[covid$location=="Italy",]$new_cases_per_million,
             )
 ```
 
-L'estrazione di sottoinsiemi (subsetting) viene effettuata, anziché con il metodo `window()`, come una semplice indicizzazione (cioè il metodo `[.xts()`). È pussibile usare sia indici numerici (convenzionali) sia stringhe in standard ISO-8601. La data può cioè essere espressa come intervallo:
+L'estrazione di sottoinsiemi (subsetting) viene effettuata, anziché con il metodo `window()`, come una semplice indicizzazione (cioè il metodo `[.xts()`). È possibile usare sia indici numerici (convenzionali) sia stringhe in standard ISO-8601. La data può cioè essere espressa come intervallo:
 
 ```{r}
 plot(cpmx["202108/2021-09-30"])
@@ -174,7 +174,7 @@ plot(cpmx["202108/2021-09-30"])
 #   geom_line(data=cpmx["2021-10-1/"], aes(x=Index, y=cpmx["2021-10-1/"]))
 # p1
 ```
-La data di inizio (prima di `/`) o di fine dell'intervallo (dopo la `/`) possono essere omesse, in tal caso significa "dall'inizio fino a ..." oppure "da ... fino alla fine". Inoltre, è possibile omettere componenti della data, intendendo così un intero sottoperiodo:
+La data di inizio (prima di `/`) o di fine dell'intervallo (dopo la `/`) possono essere omesse, in tal caso significa "dall'inizio fino a ..." oppure "da ... fino alla fine". Inoltre, è possibile omettere componenti della data, intendendo così un intero sotto-periodo:
 
 ```{r}
 length(cpmx["2021"]) # Tutto l'anno
@@ -189,7 +189,7 @@ Ad esempio, per selezionare i dati fino all'ultima domenica:
 plot(cpmx[1:(last(endpoints(cpmx, on="weeks")-1))]["2021-11/"])
 ```
 
-Ci sono anche utili funzioni per convertire il periodo in un periodo più lungo: ad esempio, da una serie giornaliera ad una serie settimanale mediante `to_weekly()`. Questi comandi restituiscono quattro serie "OHLC": Opening, High, Low, Closing, cioè il primo valore del sottoperiodo, il massimo, il minimo e l'ultimo valore:
+Ci sono anche utili funzioni per convertire il periodo in un periodo più lungo: ad esempio, da una serie giornaliera ad una serie settimanale mediante `to_weekly()`. Questi comandi restituiscono quattro serie "OHLC": *Opening, High, Low, Closing*, cioè il primo valore del sotto-periodo, il massimo, il minimo e l'ultimo valore:
 
 ```{r}
 plot(to.weekly(cpmx))
@@ -200,14 +200,14 @@ La classe `xts` è quindi molto potente ma ha alcuni punti deboli:
 * non va molto d'accordo con le funzioni `Arima()` e `predict()`: gli oggetti regressione che si ottengono sono convertiti nella classe base `ts` ma perdono l'informazione temporale (quindi iniziano con tempo 1 e hanno passo 1)
 * il metodo `xts.plot()` è apparentemente più carino, ma molto meno flessibile dell metodo generico: ad esempio è molto complesso estendere una serie sullo stesso plot con dati successivi.
 
-Per questi motivi, si consiglia l'uso di `xts` per la gestione della serie temporale, l'estrazione di sottoperiodi e l'eventuale aggregazione, ma poi si consiglia di convertire di nuovo in `ts` mediante il metodo `ts_ts()` prima di effettuare le regressioni.
+Per questi motivi, si consiglia l'uso di `xts` per la gestione della serie temporale, l'estrazione di sotto-periodi e l'eventuale aggregazione, ma poi si consiglia di convertire di nuovo in `ts` mediante il metodo `ts_ts()` prima di effettuare le regressioni.
 
 
 # Regressione e Predizione
 
 ## Verifiche iniziali
 
-La prima verifica è sempre quella sui dati mancanti. Eliminiamo qualche dato dalla serie `cpm` per vedere, in seguito, come gestre i dati mancanti:
+La prima verifica è sempre quella sui dati mancanti. Eliminiamo qualche dato dalla serie `cpm` per vedere, in seguito, come gestire i dati mancanti:
 
 ```{r}
 cpmx[c(30, 213, 401)] <- NA
@@ -259,7 +259,7 @@ plot(forecast(fit, 30, level=c(80, 95, 99)),
 abline(v=decimal_date(end(cpmx)))
 ```
 
-In realtà, le oscillaziomi settimanali sono più un artefatto di misura che una proprietà intrinseca del fenomeno, quindi è più corretto effettuare predizioni su, ad esempio, i valori settimanali. Quindi utilizziamo lo stesso oggetto `cpmm` sopra ottenuto sommando i valori settimanali, e ci concentriamo sulla finestra `2021.4` -- `2021.911`. Inoltre, come vedremo più avanti, il metodo ARIMA si applica a serie *stazionarie*, in cui cioè valor medio e varianza sono stabili. Il metodo più comune per stabilizzare la varianza è *trasformare* i dati applicanco il logaritmo:
+In realtà, le oscillazioni settimanali sono più un artefatto di misura che una proprietà intrinseca del fenomeno, quindi è più corretto effettuare predizioni su, ad esempio, i valori settimanali. Quindi utilizziamo lo stesso oggetto `cpmm` sopra ottenuto sommando i valori settimanali, e ci concentriamo sulla finestra `2021.4` -- `2021.911`. Inoltre, come vedremo più avanti, il metodo ARIMA si applica a serie *stazionarie*, in cui cioè valore medio e varianza sono stabili. Il metodo più comune per stabilizzare la varianza è *trasformare* i dati applicando il logaritmo:
 
 ```{r}
 cpmm <- apply.weekly(ts_xts(cpm), sum)
@@ -288,7 +288,7 @@ $$
 
 Tale funzione vale sempre 1 per un lag 0 (autocorrelazione con se stesso), e per un processo $\mathrm{MA}(q)$ va a zero al lag $q+1$.
 
-Per quanto riguarda i processi $\mathrm{AR}(p)$, essi rappresentano un'autoregressione:
+Per quanto riguarda i processi $\mathrm{AR}(p)$, essi rappresentano un'auto-regressione:
 $$
 x_t = \phi_1 x_{t-1} + \phi_2 x_{t-2} + \dots +\phi_{p} x_{t-p} + w_t
 $$
@@ -308,7 +308,7 @@ Quindi, come regola base, dopo aver reso stazionaria la serie storica mediante d
 * se un processo è puro noise, né ACF né PACF mostrano alcuna struttura
 * eventuali *stagionalità* si mostrano come picchi intensi a lag elevati (corrispondenti al periodo della stagionalità)
 
-Generalmente, a meno che un processo non risulti AR o MA puro, le funzioni ACF e PACF vengono utilizzate per identificare *set* di possibili parametri $p$ e $q$, scegliendo poi la combinazione migliore mediante gli stimatori di bontà della regressione. Il più adatto a questo scopo è AIC (Akaike Information Criterion), che deve essere minimizzato.
+Generalmente, a meno che un processo non risulti AR o MA puro, le funzioni ACF e PACF vengono utilizzate per identificare *set* di possibili parametri $p$ e $q$, scegliendo poi la combinazione migliore mediante gli stimatori di bontà della regressione. Il più adatto a questo scopo è AIC (*Akaike Information Criterion*), che deve essere minimizzato.
 
 
 ### Esempio: Anomalia terra-mare
@@ -428,7 +428,7 @@ lx <- log(x) # logaritmo per stabilizzare la varianza
 dlx = diff(lx) # prima differenziazione
 plot.ts(cbind(x,lx,dlx), main="")
 ```
-La serie `dlx` mostra ancora un evodente periodicità stagionale. Questa può essere evidenziata mediante la funzione `monthplot()`, che raggruppa anni diversi per lo stesso mese:
+La serie `dlx` mostra ancora un evidente periodicità stagionale. Questa può essere evidenziata mediante la funzione `monthplot()`, che raggruppa anni diversi per lo stesso mese:
 
 ```{r}
 monthplot(dlx)
@@ -447,7 +447,7 @@ La stagionalità può essere analizzata anche con il metodo `stl()`:
 plot(stl(x, "periodic"))
 ```
 
-Si noti che `stl(x, "periodic")` restituisce un oggetto `ts` multivariato, le cui colonne possono essere estratte, ad es., così: `plot(s$time.series[,"seasonal"])`.
+Si noti che `stl(x, "periodic")` restituisce un oggetto `ts` multi-variato, le cui colonne possono essere estratte, ad es., così: `plot(s$time.series[,"seasonal"])`.
 
 A questo punto studiamo l'autocorrelazione per identificare i parametri del modello SARIMA:
 
@@ -457,7 +457,7 @@ tsdisplay(ddlx, lag.max = 4*12)
 
 Anzitutto, per eliminare il trend abbiamo differenziato 1 volta sia a lag 1 che a lag 12, quindi i parametri $d$ della parte stagionale e di quella non stagionale saranno entrambi 1. In formula, si scrive che il modello trasformato è $\nabla_{12}\nabla \log x_t$.
 
-Per quanto riguarda i parametri $p$ e $q$, entrambi i diagrammi di autocorrelazione mostrano un forte picco a lag 12 (riprova della stagionalità) e entrambi i grafici mostrano una rapida caduta verso un'oscillazione stabilizzata: dopo un picco a lag 1, sial la PACF che la ACF passano all'oscillazione stabilizzata, quindi $p=1$ e $q=1$.
+Per quanto riguarda i parametri $p$ e $q$, entrambi i diagrammi di autocorrelazione mostrano un forte picco a lag 12 (riprova della stagionalità) e entrambi i grafici mostrano una rapida caduta verso un'oscillazione stabilizzata: dopo un picco a lag 1, sia la PACF che la ACF passano all'oscillazione stabilizzata, quindi $p=1$ e $q=1$.
 Dopo il picco a lag 12, invece, la PACF mostra una decrescita geometrica, il che indica il termine $p=0$ (modello AR), mentre la ACF mostra un rapido smorzamento subito dopo il primo picco, che indica $q=1$ nel modello MA. Secondo la notazione comune, il modello appropriato è quindi $\mathrm{ARIMA}(1,1,1)\times(0,1,1)_{12}$, ovvero un modello stagionale con lag 12 con parametri $(1,1,1)$ per la parte non-stagionale, e $(0,1,1)$ per la parte stagionale.
 
 ```{r}
@@ -487,17 +487,17 @@ plot(forecast(fit3, h=12))
 
 Per motivi di studio è spesso utile poter *simulare* un processo ARIMA. A questo scopo possiamo utilizzare la funzione `arima.sim()`, che genera una serie temporale a partire dai termini $p$, $d$, e $q$ del modello desiderato.
 
-Vediamo ad esempio un processo autoregressivo di tipo $\mathrm{AR}(1)$:
+Vediamo ad esempio un processo auto-regressivo di tipo $\mathrm{AR}(1)$:
 
 ```{r}
 set.seed(123)
 tsdisplay(arima.sim(model=list(ar=c(0.9)), n=500))
 ```
 
-Come si vede, la ACF degrada in maniera geometrica entre la PACF ha un brusco calo sotto la soglia di significatività a lag=1, indice appunto di un modello con $p=1$
+Come si vede, la ACF degrada in maniera geometrica mentre la PACF ha un brusco calo sotto la soglia di significatività a lag=1, indice appunto di un modello con $p=1$
 
 
-Simuliao invece un processo a media mobile $\mathrm{MA}(2)$:
+Simuliamo invece un processo a media mobile $\mathrm{MA}(2)$:
 
 ```{r}
 set.seed(123)
@@ -514,7 +514,7 @@ x <- arima.sim(model=list(ar=c(0.6, -0.2), ma=c(0.4)), n=1000)
 tsdisplay(x)
 ```
 
-Come si vede, quando entrambi i termini sono presenti i grafici ACF e PACF possono non essere facilmente interpretabili. In questo caso, ad esempio, saremmo portati a proporre un modello $\rm{ARMA}(3, 2)$. Per questo motivo è opportuno, partendo da questa ipotesi, vautare anche condizioni simili e scegliere quella con AIC minimo, che è appunto ciò che fa `auto.arima()`, di cui possiamo vedere il processo mediante il parametro `trace=T`:
+Come si vede, quando entrambi i termini sono presenti i grafici ACF e PACF possono non essere facilmente interpretabili. In questo caso, ad esempio, saremmo portati a proporre un modello $\rm{ARMA}(3, 2)$. Per questo motivo è opportuno, partendo da questa ipotesi, valutare anche condizioni simili e scegliere quella con AIC minimo, che è appunto ciò che fa `auto.arima()`, di cui possiamo vedere il processo mediante il parametro `trace=T`:
 
 ```{r}
 auto.arima(x, start.p=3, start.q=2, trace=T)
@@ -544,7 +544,7 @@ Il numero di differenziazioni necessarie per rendere la serie stazionaria può e
 tsdisplay(diff(s, diff=d))
 ```
 
-Se non volessimo utilizzare `auto.arima()`, potremmo verificare l'AIC di una combinazione di parametri esplorati a tappeto. Le funzioni di autocorelazione suggeriscono un modello $\mathrm{ARIMA}(3,1,2)$. Il modello ottimale dovrebbe avere quidi una combinzione di $p$ e $q$ inferiori a 3 e 2. Li proviamo tutti e selezioniamo quello con AIC minore:
+Se non volessimo utilizzare `auto.arima()`, potremmo verificare l'AIC di una combinazione di parametri esplorati a tappeto. Le funzioni di autocorrelazione suggeriscono un modello $\mathrm{ARIMA}(3,1,2)$. Il modello ottimale dovrebbe avere quindi una combinazione di $p$ e $q$ inferiori a 3 e 2. Li proviamo tutti e selezioniamo quello con AIC minore:
 
 ```{r}
 g <- expand.grid(p=1:3, q=1:2, drift=c(F, T), aic=NA)
