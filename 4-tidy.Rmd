@@ -1,0 +1,908 @@
+---
+title: |
+  ![](logo.png){height=0.5in} ![](logo-TSM.png){height=0.4in}
+  
+  --- Parte 4. ---
+
+  Tidyverse
+author: "Paolo Bosetti (`paolo.bosetti@unitn.it`)"
+date: "Data creazione: `r lubridate::now()`"
+output: 
+  pdf_document: 
+    keep_tex: no
+    toc: yes
+    fig_caption: yes
+    number_sections: yes
+    highlight: pygments
+    toc_depth: 4
+    extra_dependencies:
+      babel: ["italian"]
+  documentclass: article
+  classoption: a4paper
+header-includes:
+  - \usepackage{fancyhdr}
+  - \pagestyle{fancy}
+  - \fancyhead[CO,CE]{\includegraphics[height=0.5cm]{by-nc-sa.png}}
+  - \fancyfoot[CO,CE]{Corso di GNU-R e RStudio --- paolo.bosetti@unitn.it}
+  - \fancyfoot[LE,RO]{\thepage}
+---
+
+```{r include=FALSE, show=FALSE}
+knitr::opts_chunk$set(
+  fig.align="center", 
+  fig.dim=c(8, 4), 
+  out.height="3in")
+library(tidyverse)
+library(ggthemes)
+library(xts)
+library(RColorBrewer)
+library(ggExtra)
+library(tsbox)
+library(forecast)
+library(modelr)
+library(cowplot)
+source("myfunctions.R")
+```
+
+# Introduzione al Tidyverse
+
+*Tidyverse* rappresenta una collezione di librerie nate attorno a RStudio (spesso dagli stessi sviluppatori), allo scopo di modernizzare R sia come linguaggio sia come potenzialità soprattutto nella creazione di grafici complessi e nella gestione di *big data*.
+
+Un elemento comune alle librerie Tidyverse è quello di sostituire funzioni nidificate, tipiche di R, con sequenze di operazioni: da `f(g(x))` a `g(x) %>% f()`. Lo scopo è generalmente rendere il codice più leggibile e flessibile.
+
+Questo nuovo approccio è reso possibile dal due caratteristiche di R:
+
+1. R è un linguaggio funzionale, in cui le funzioni sono *first class objects*;
+2. Le funzioni accettano parametri nominati in qualsiasi ordine, anonimi nell'ordine in cui sono definiti;
+3. Gli stessi operatori come `+`, `-`, ..., sono in realtà *funzioni* con due argomenti;
+4. Gli operatori possono essere *ridefiniti* per nuovi oggetti, ed è possibile definire *nuovi operatori* del tipo `%op%`, dove `op` può essere un qualsiasi insieme di caratteri.
+
+Grazie a queste caratteristiche, Tidyverse introduce la possibilità di accodare operazioni, avendo ridefinito l'operatore `+`, e di passare strutture dati mediante l'operatore `%>%` (*pipe*). In quest'ultimo caso un esempio è particolarmente efficace:
+```{r}
+set.seed(123)
+(x <- rnorm(10)) %>% mean %>% round(digits=2)
+```
+che è equivalente alla "vecchia" sintassi:
+```{r}
+set.seed(123)
+round(mean(x <- rnorm(10)), digits=2)
+```
+ma molto più leggibile.
+
+Nell'ultimo esempio, si noti che il vettore `x` **rimane invariato**, mentre se avessimo scritto `x <- rnorm(10) %>% mean %>% round(digits=2)`, allora `x` conterrebbe la media del vettore generato (che a sua volta andrebbe perso).
+
+In generale, tuttavia, la "nuova moda" non sostituisce completamente la vecchia, per alcuni motivi:
+
+* Tidyverse è comunque abbastanza pesante
+* se certe funzionalità (ad esempio il *pipe*) sostanzialmente non hanno svantaggi, altre vanno poco d'accordo con librerie e funzioni "vecchie", ed è soprattutto il caso dei grafici
+* in certi casi, ed è di nuovo il caso dei grafici, le vecchie funzioni sono semplicemente più concise e rapide, quindi preferibili se si generano grafici per analisi dati piuttosto che per la pubblicazione finale
+* spesso le funzioni grafiche sono molto potenti, ma tendono a nascondere all'utente i dettagli degli algoritmi utilizzati
+
+Le librerie che fanno parte di Tidyverse possono essere caricate individualmente oppure con un unica istruzione `library(tidyverse)`. Tuttavia, se se ne usa solo un limitato sottoinsieme spesso conviene caricarle individualmente.
+
+## Strutture dati
+
+Le librerie Tidyverse si aspettano i dati in formato *tidy*, cioè un'osservazione per riga, un osservando per colonna. I dati sono tipicamente contenuti in data frame o, preferibilmente, nella nuova classe `tibble`, che è per lo più interscambiabile con i data frame, dato che ne eredita la classe. Una `tibble` può essere creata convertendo un data frame, oppure passando i dati per colonne (come per la funzione `data.frame()`), oppure ancora passando i dati **per righe**, medante la funzione `tribble()` (notare la `r`, per *rows*):
+
+```{r}
+n <- 10
+a <- data.frame(
+  In=1:n, 
+  Out=(1:n)^2 + rnorm(n, sd=1), 
+  Size=rnorm(n, 10, 0.1)) %>% 
+  tibble %>% 
+  print
+(b <- tribble(
+  ~name, ~age,
+  "Paolo", 50,
+  "Luca", 45,
+  "Lucia", 38,
+  "Anna", 52
+)) %>% knitr::kable()
+```
+
+Gli argomenti della funzione `tibble()` sono valutati in maniera *lazy*, cioè solo quando sono effettivamente utilizzati, a differenza che in `data.frame()`:
+
+```{r warning=FALSE}
+rm(x, y)
+try(
+  df <- data.frame(x=1:10, y=x^2)
+)
+tb <- tibble(x=1:5, y=x^2)
+tb
+```
+
+## Lettura e importazione dati
+
+La libreria `readr` mette a disposizione:
+
+* `read_csv()`/`read_csv2()`: comma separated (CSV) files
+* `read_tsv()`: tab separated files
+* `read_delim()`: general delimited files
+* `read_fwf()`: fixed width files
+* `read_table()`: tabular files where columns are separated by white-space.
+* `read_log()`: web log files
+
+Tutte queste funzioni restituiscono una `tibble`.
+
+```{r}
+stat <- read_csv2(mydata("censimento_TAA_2011.csv"))
+trace <- read_csv2(mydata("tracciato_2011_localita.csv"))
+```
+
+Ovviamente esistono anche le controparti `write_*()`, che accettano come primo argomento un data frame oppure una `tibble`. Generalmente queste funzioni sono molto più veloci delle controparti della libreria `base` (`write.*()`).
+
+
+## Manipolazione dati
+
+La libreria `dplyr` mette a disposizione un'ampia scelta di funzioni per la manipolazione di tabelle e `tibble`. In generale, queste funzioni semplificano e rendono più leggibili operazioni che sarebbero comunque realizzabili mediante approcci più standard, anche se con più passaggi e in maniera meno efficiente.
+
+Nella nomenclatura tidy, una `tibble` contiene una o più *variabili* (colonne), ciscuna con valori per uno o più *casi* (righe). Secondo questa convenzione, le principali funzioni di `dplyr` sono:
+
+* `mutate()` aggiunge nuove veriabili, funzione di variabili esistenti
+* `select()` seleziona variabili in base al oro nome
+* `filter()` seleziona casi in base al loro valore
+* `summarise()` riconduce più valori ad un unico indicatore
+* `arrange()` riordina i casi (righe)
+
+Vediamo esempi di filtraggio:
+
+```{r}
+starwars %>% 
+  filter(homeworld == "Naboo" & species== "Human")
+```
+
+Selezione:
+
+```{r}
+starwars %>% 
+  select(name, ends_with("color")) %>%
+  names
+```
+
+Modifica:
+
+```{r}
+starwars %>% 
+  filter(species == "Human") %>%
+  mutate(name, bmi = round(mass / ((height / 100)  ^ 2), 1)) %>%
+  select(name:mass, bmi) %>%
+  arrange(desc(bmi), )
+```
+Si noti che la variante `%<>%` dell'operatore pipe consente di fare una *modifica sul posto* di una tibble:
+
+```{r}
+library(magrittr)
+humans <- starwars %>% filter(species == "Human")
+humans %<>% mutate(name, bmi = round(mass / ((height / 100)  ^ 2), 1))
+humans
+```
+
+Talvolta i dati sono inclusi come *nomi di riga*. Ciò può avvenire solo se i dati sono originariamente in un data frame, dato che le `tibble` non supportano i nomi di riga:
+
+```{r}
+mtcars %>% row.names
+mtcars %>% mutate(
+  kpl=round(mpg*0.621371/3.78541, 1),
+  lp100k=round(100/kpl, 1)) %>% 
+  rownames_to_column(var="Model") %>%
+  head
+```
+
+La funzione `summarise()` è particolarmente utile assieme a `group_by()`:
+
+```{r}
+starwars %>%
+  group_by(species) %>%
+  summarise(
+    n = n(),
+    mass = round(mean(mass, na.rm=T), 1),
+    "max height" = max(height, na.rm=T),
+    "min height" = min(height, na.rm=T)
+  ) %>%
+  filter(
+    n > 1,
+    mass > 50
+  )
+```
+
+Sono infine particolarmente utili le funzioni per **combinare tabelle di dati** secondo il paradigma relazionale:
+
+```{r}
+persons <- tribble(
+  ~name, ~surname, ~role,
+  "Paolo", "Bosetti", 1,
+  "John", "Smith", 2,
+  "Phil", "Cameron", 1,
+  "Eddy", "Hunt", 3,
+  "Sebastian", "Hauer", 3
+)
+
+roles <- tribble(
+  ~id, ~role,
+  1, "attack",
+  2, "play",
+  3, "defense"
+)
+
+team <- left_join(persons, roles, by=c("role"="id"))
+team %>% filter(role.y=="attack")
+# Equivalente a:
+team[team$role.y=="attack",]
+```
+
+
+La libreria `purrr` mette inoltre a disposizione funzioni di mapping più comode rispetto alle equivalenti di R base (`lapply` e simili), ed hanno il vantaggio di ritornare sempre lo stesso tipo di oggetto, a differenza delle funzioni base, e quindi di essere più adatte alla programmazione:
+
+```{r}
+df <- tibble(
+  a = rnorm(10),
+  b = rnorm(10),
+  c = rnorm(10),
+  d = rnorm(10)
+)
+map(df, mean) %>% class
+map_dbl(df, mean) %>% class
+map_lgl(df$a, function(x) x>=0)
+```
+
+Esistono anche versioni per funzioni a due parametri e a $n$ parametri:
+
+```{r}
+mu <- list(1, 3, -10)
+sigma <- list(1, 0.2, 2)
+map2(mu, sigma, rnorm, n=5)
+n <- 1:3
+list(n=n, mean=mu, sd=sigma) %>%
+  pmap(rnorm) %>%
+  str
+```
+
+Se tutti gli argimenti hanno la stessa lunghezza si può usare anche un data frame:
+
+```{r}
+params <- tribble(
+  ~mean, ~sd, ~n,
+    5,     1,  1,
+   10,     5,  2,
+   -3,    10,  3
+)
+params %>% 
+  pmap(rnorm) %>%
+  str
+```
+
+## Stringhe
+
+La manipolazione delle stringhe è tradizionalmente più laboriosa in R che in altri linguaggi dinamici (come Ruby o Python). Le librerie `glue` e `stringr` semplificano due classi di operazioni: la prima l'interpolazione di stringhe, la seconda il matching.
+
+In R base non c'è un meccanismo per l'interpolazione di stringhe, ma esse vanno combinate con ripetute chiamate a `cat()`. `glue` invece introduce l'interpolazione:
+
+```{r}
+library(glue)
+glue("Questo istante: {date()}. Autore: {author}", author="Paolo Bosetti")
+```
+
+La versione `glue_data()` è fatta per accettare *pipe*:
+
+```{r}
+head(mtcars) %>% glue_data("{rownames(.)} has {hp} hp")
+```
+
+La libreria `stringr` offre numerose funzioni, tra cui le più utili sono quelle per spezzare, per cambiare *case* (maiuscolo/minuscolo) e per efettuare il *pattern matching* con espressioni regolari.
+Per queste ultime, è utile installare l'add-in di RStudio `RegExplain`:
+
+```{r eval=FALSE}
+devtools::install_github("gadenbuie/regexplain")
+```
+
+```{r}
+library(stringr)
+str_split(c("a,b", "c,d,e"), ",")
+c("Paolo Bosetti", "Bosetti, Paolo") %>%
+  str_match_all("(\\w+)[,\\s]+(\\w+)")
+```
+
+
+
+## Grafici base
+
+Forse una delle innovazioni più importanti di Tidyverse è la nuova interfaccia di plotting, che è fornita dalla libreria `ggplot2`, dove la doppia `g` sta per *Grammar of Graphics*, secondo l'idea di comporre un grafico accostando funzioni secondo una grammatica base che consente di tenere separati i dati dagli algoritmi e dall'estetica.
+
+Una interessante caratteristica di `ggplot2` è che consente di adottare dei temi (personalizzabili) in modo da controllare l'aspetto estetico dei grafici realizzati. I temi vengono caricati così:
+```{r}
+theme_set(theme_bw())
+```
+
+Un GGPlot viene creato inizialmente con la funzione `ggplot()` che richiede la struttura dati (`tibble` o `dataframe`) e gli *aesthetics*, cioè un comando che specifica *cosa* deve essere visualizzato nel grafico (funzione `aes()`). Quest'unico comando tuttavia produce esclusivamente un grafico vuoto: per riempirlo è necessario aggiungere dei *layer*, **sommando** al `ggplot` opportuni comandi:
+
+```{r}
+ggplot(a, aes(In, Out)) + 
+  geom_smooth(formula = y~poly(x,2), method="lm") +
+  geom_point(aes(size=Size), color="blue") +
+  labs(title="Grafico di esempio", subtitle = "con GGPlot2") + 
+  xlab("Input") +
+  ylab("Output") +
+  labs(size="Dimensione")
+  
+```
+### Aesthetics
+
+È importante comprendere il ruolo degli *aesthetics*: essi definiscono quali *variabili* nei dati originali vengono mappati sui due assi e sui vari indicatori del grafico (colori, dimensioni, forma, riempimento, ecc.). A seconda dei casi `aes()` può essere indicata solo in `ggplot()` oppure anche nei comandi `geom_*()` successivi:
+
+```{r}
+gp <- diamonds %>% 
+  slice_sample(prop=0.2) %>%
+  ggplot(aes(x=carat, y=price, color=cut)) + 
+  geom_point(size=1/4) + 
+  geom_smooth()
+print(gp)
+```
+
+Come si vede, siccome l'estetica include i tre parametri, se non si specifica nessuna estetica per `geom_smooth()` essa viene applicata per ciascun raggruppamento previsto dall'estetica `color`. Se invece volessimo un'unica linea di tendenza dovremmo specificare un'estetica apposita e **separata** per `geom_point()` e per `geom_smooth()`:
+
+```{r}
+diamonds %>% 
+  slice_sample(prop=0.2) %>%
+  ggplot() + 
+  geom_point(aes(x=carat, y=price, color=cut), size=1/4) + 
+  geom_smooth(aes(x=carat, y=price))
+```
+Si noti l'uso della funzione `slice_sample()` (in `dplyr`) per estrarre a caso solo il 20% dei dati, in modo da velocizzare la creazione del grafico. 
+
+Le etichette di testo possono essere modificate con il *verbo* `labs()`:
+
+```{r}
+gp + labs(title="Diamanti!", x="Carati", y="Prezzo", color="Taglio")
+```
+
+### Facets
+
+Altri termini di raggruppamento possono essere inclusi variando ad esempio `size`, `shape`, `fill` dei punti del grafico, oppure creando matrici di grafici in cui le variabili da utilizzare sulle righe e sulle colonne della matrice vanno indicate mediante una *formula* di tipo `row ~ column`, omettendo eventualmente la prima o la seconda:
+
+```{r}
+gp + facet_wrap(~color)
+```
+
+```{r}
+gp + facet_grid(cut~color)
+```
+
+
+### Scale
+
+I verbi ggplot che cominciano con `scale_` possono essere utilizzati per manipolare le scale degli assi (sia gli assi $x$ e $y$ che gli assi virtuali). Ad esempio è possibile cambiare la spaziatura delle etichette degli assi (`scale_*_continuous(breaks=c(...))`) che il tipo di scala (`scale_*_log10()` piuttosto che `scale_*_reverse()`):
+
+```{r}
+gp + scale_x_continuous(breaks = seq(1, 3, 0.5)) +
+  scale_y_log10()
+```
+
+### Palette
+
+Un particolare tipo di scala è quella dei colori. Le palette di colori disponibili sono visualizzabili con il comando (libreria `RColorBrewer`): 
+
+```{r eval=FALSE, include=TRUE}
+display.brewer.all()
+```
+
+Ad esempio:
+
+```{r}
+gp +
+  scale_color_brewer(palette = "Spectral")
+```
+
+### Limiti degli assi
+
+In GGplot2 ci sono due modi per modificare i limiti degli assi:
+
+1. *rimuovendo* i dati esterni ad un intervallo: quiesto modifica il set di dati iniziali, e quindi cambia il comportamento di funzioni come `geom_smooth()`
+2. *zoomando* sul grafico, mantenendo intatto il set di dati.
+
+```{r, warning=FALSE}
+set.seed(123)
+data <- tibble(
+  x=seq(0,100,0.5),
+  y=0.5*x^2+0.1*x,
+  yn=y+rnorm(length(x), 0, 100)
+)
+
+(gp <- data %>% ggplot(aes(x=x, y=yn)) + 
+  geom_point() + 
+  geom_smooth(method="lm", formula=y~poly(x, 2)+x, aes(color="quadratico")) +
+  geom_smooth(method="lm", formula=y~x, aes(color="lineare")) +
+  scale_color_manual(name="Fit", values=c(2, 3)) +
+  ggtitle("Set dati completo"))
+gp + 
+  xlim(c(0, 25)) + 
+  ylim(c(-200, 1000)) + 
+  ggtitle("Eliminazione dati")
+gp +
+  coord_cartesian(xlim=c(0, 25), ylim=c(-200, 1000)) + 
+  ggtitle("Zoom")
+```
+
+
+# Esempi
+
+In questo capitolo riprendiamo alcuni concetti espressi nelle parti precedenti e ricreiamo gli stessi grafici in GGplot2.
+
+## Distribuzioni
+
+### Distribuzioni discrete
+
+```{r}
+df <- tibble(
+  x=1:20,
+  d=dgeom(x, prob=0.2),
+  pl=pgeom(x, prob=0.2, lower.tail = T),
+  pu=pgeom(x, prob=0.2, lower.tail = F)
+)
+ggplot(df, aes(x=x, y=d)) +
+  geom_col(width=0.1) +
+  labs(title="Densità di distribuzione geometrica", y="p(x)")
+
+ggplot(df) +
+  geom_step(aes(x=x, y=pl, col="Inferiore")) +
+  geom_step(aes(x=x, y=pu, col="Superiore")) +
+  scale_color_manual(name="Coda", values=c(2,3)) +
+  labs(title="Probabilità cumulativa geometrica", y="P(x)")
+```
+
+### Distribuzioni continue
+
+```{r}
+df <- tibble(
+  x=seq(-4,4,length.out=100),
+  f=dnorm(x, 0, 1)
+)
+df %>% ggplot(aes(x=x, y=f)) +
+  geom_line(color="steelblue") + 
+  geom_hline(yintercept=0, linetype=2) +
+  geom_vline(xintercept=c(-3, 0, 3), linetype=2) +
+  labs("Standard normal density function", y="f(x)")
+```
+### Istogrammi e QQ-plot
+
+```{r}
+set.seed(123)
+(data <- tibble(
+  x=rnorm(100)
+)) %>%
+ggplot(aes(x=x)) + 
+  geom_histogram(aes(y=..density..), fill="steelblue", color="black") +
+  geom_density(fill="red", alpha=0.2)
+```
+
+**Nota**: in `aes()` la notazione `..density..` sta a indicare "applica la *statistica* `density` ai dati in ingresso". Le statistiche disponibili sono elencate nella sezione *Computed variables* dell'help delle funzioni `stat_`.
+
+A volte si desidera una raffigurazione comparativa:
+
+```{r}
+ggplot(data=diamonds) + 
+  stat_summary(mapping=aes(x=cut, y=price), 
+               fun.min=min,
+               fun.max=max,
+               fun=median)
+```
+Infine, la distribuzione può essere analizzata mediante i diagrammi quantile-quantile:
+
+```{r}
+set.seed(123)
+tibble(
+  x=rnorm(100, mean=20)
+) %>%
+ggplot(aes(sample=x)) + 
+  geom_qq() +
+  geom_qq_line(color="red") + 
+  xlab("Quantili teorici") +
+  ylab("Quantili del campione")
+```
+### Boxplot
+
+```{r}
+df <- read_table(mydata("twosample.dat"), col_types=cols(
+  treat=col_factor(),
+  yield=col_double()))
+df %>% ggplot(aes(x=treat, y=yield)) +
+  geom_boxplot(fill="steelblue")
+```
+### Istogrammi marginali
+
+```{r}
+df <- tibble(mtcars)
+gp <- df %>% ggplot(aes(x=wt, y=mpg, color=cyl, size=cyl)) +
+  geom_point() + 
+  theme(legend.position="bottom")
+
+gp %>% ggMarginal(type="histogram", fill="lightgray")
+```
+
+## Modelli
+
+La libreria `modelr` è utile nella costruzione e analisi di modelli lineari.
+
+```{r}
+set.seed(123)
+df <- tibble::tibble(
+  x = sort(runif(100)),
+  y = 5 * x + 0.5 * x ^ 2 + 3 + rnorm(length(x))
+)
+```
+
+Il *subsetting* viene effettuato mediante le funzioni `resample()` e `resample_partition()`. Esse ritornano oggetti `resample`, che contengono solo la lista degli indici campionati e un *puntatore* ai dati originali; in questo modo, ricampionamenti successivi su larghe quantità di dati sono più efficienti:
+
+```{r}
+df1 <- resample(df, sample(seq_along(df$x), 10)) # 10 elementi casuali
+ggplot(df, aes(x=x, y=y)) + geom_point() +
+  geom_point(data=as_tibble(df1), mapping=aes(x=x, y=y), color="red")
+```
+```{r}
+dfp <- resample_partition(df, c(train=0.8, test=0.2))
+ggplot(as_tibble(dfp$train)) + 
+  geom_point(aes(x=x, y=y, color="train")) +
+  geom_point(aes(x=x, y=y, color="test"), as_tibble(dfp$test)) + 
+  scale_color_manual(name="Categoria", values=c(2,3))
+```
+```{r}
+df.train <- as_tibble(dfp$train)
+df.lm <- lm(y~x, data=df.train)
+df.train %<>% add_predictions(df.lm)
+df.train %<>% add_residuals(df.lm)
+ggplot(df.train) + 
+  geom_point(aes(x=x, y=y)) + 
+  geom_line(aes(x=x, y=pred), col="red") + 
+  geom_linerange(aes(x=x, ymin=y, ymax=y-resid), color=gray(2/3))
+```
+
+
+
+## Serie temporali
+
+```{r}
+data <- read.csv(mydata("temperature-anomaly.csv"))
+data <- data[data$Entity=="Global",]
+t.global <- xts(data$Median.temp, 
+                order.by=as.Date(as.character(data$Year), format="%Y"),
+                frequency = 1)
+```
+
+```{r}
+x1 <- t.global["/1999-12-31"]
+p1 <- autoplot(x1) + 
+  geom_hline(yintercept = 0) +
+  geom_area(aes(x=index(x1), y=ifelse(x1<0, x1, 0)), fill="blue") +
+  geom_area(aes(x=index(x1), y=ifelse(x1>0, x1, 0)), fill="orange") +
+  labs(title="Anomalia termica", subtitle = "Terra/mare, globale") + 
+  xlab("Anno") +
+  ylab("Anomalia (°C)")
+
+x2 <- t.global["2000-1-1/"]
+p1 + geom_line(data=x2, aes(Index, x2), color="red") +
+  #scale_x_continuous(breaks=seq(start(x1), end(x2), by="20 years")) +
+  scale_x_date(breaks="10 years", date_labels="%Y") +
+  scale_y_continuous(breaks=seq(round(min(t.global), 0.1), round(max(t.global), 0.1), by=0.1))
+```
+
+Si noti che gli oggetti `xts` vengono automaticamente convertiti in `data.frame` invocando automaticamente la funzione `fortify()`. Quest'ultima crea la colonna dei tempi con il nome `Index`:
+
+```{r}
+x2 %>% fortify %>% str
+```
+Per questo motivo, si usa l'estetica `aes(x=Index, y=x2)`
+
+
+```{r}
+passl <- AirPassengers %>% log %>% ts_xts
+
+gp <- passl %>%
+  ggplot(aes(x=Index, y=value)) + 
+  geom_line()
+
+(fit <- auto.arima(ts_ts(passl)))
+pred <- forecast(fit, h=12)
+
+gp + 
+  geom_line(aes(x=Index, y=value), 
+            data=ts_xts(pred$fit), color="gray", lty=2) +
+  geom_ribbon(aes(x=Index, 
+                  ymin=ts_xts(pred$lower)[,2], 
+                  ymax=ts_xts(pred$upper)[,2]), 
+              data=ts_xts(pred$mean), fill=gray(0.9)) +
+  geom_ribbon(aes(x=Index, 
+                  ymin=ts_xts(pred$lower)[,1], 
+                  ymax=ts_xts(pred$upper)[,1]), 
+              data=ts_xts(pred$mean), fill=gray(0.8)) +
+  geom_line(aes(x=Index, y=value), data=ts_xts(pred$mean), color="red") + 
+  labs(title="Air Passengers", x="Data", y="Numero passeggeri (/1000)") + 
+  scale_x_date(breaks="1 year", date_labels="%Y")
+```
+In conclusione, è opportuno ricordarsi quanto segue:
+
+* le funzioni ARIMA supportano gli oggetti `ts`, *e non* gli oggetti `xts`: se si passa un `xts` a `arima()` esso viene convertito in un `data.frame`, perdendo l'informazione teporale. È quindi **sempre opportuno convertire un `xts` mediante la funzione `tsbox::ts_ts()`**;
+* viceversa, GGplot2 opera su oggetti `xts` **e non su `ts`**; gli oggetti `xts` vengono convertiti in `tibble` automaticamente invocando la funzione `ggplot2::fortify()`;
+* la predizione restituisce un oggetto `predict`, che al suo interno contiene `ts` per il fit, la predizione e gli intervalli di confidenza. Per essere plottati essi devono prima essere convertiti nuovamente in un `xts` mediante `tsbox::ts_xts()`.
+
+Infine, quando si costruisce l'estetica con `aes()` è utile verificare i *nomi* delle variabili messe a disposizione dai dati in questo modo:
+
+```{r}
+ggplot(ts_xts(pred$mean))$data %>% str
+```
+
+Come si vede, usando `ts_xts(pred$mean)` come parametro `data` i tempi vengono nominati `Index` e i valori `value`.
+
+Ovviamente quanto sopra è già fornito mediante un'unica funzione, `forecast::autoplot()`, che accetta come argomento sia `ts` che `xts`, che addirittura `forecast`:
+
+```{r}
+autoplot(pred) + 
+  labs(x="Tempo", y="Passeggeri (/1000)")
+```
+
+Riprendiamo ora i dati COVID-19 per illustrare alcuni dettagli dell'so di oggetti `xts` con ggplot:
+
+```{r}
+library(lubridate)
+library(scales)
+url <- "https://covid.ourworldindata.org/data/owid-covid-data.csv"
+datafile <- basename(url)
+if (!file.exists(datafile) | difftime(now(),  file.mtime(datafile), units="hours") > 24 ) {
+  print("Downloading new data from the Internet")
+  download.file(url, datafile)
+}
+covid <- read_csv(datafile) %>% 
+  filter(location=="Italy") %>% 
+  select(c("date", "new_cases", "new_deaths", "new_tests", "people_vaccinated_per_hundred", "positive_rate", "icu_patients")) 
+cts <- xts(select(covid, new_cases:icu_patients), order.by = covid$date)
+```
+
+Una delle utili funzionalità di `xts` è quella di semplificare l'applicazione di funzioni a sottoperiodi, ad esempio per sommarizzare l'andamento settimanale (non risentendo in questo caso della periodicità settimanale dei test). In questo caso, però, l'oggetto `cts` che abbiamo creato è *multivariato*, e le funzioni `apply.*` si applicano solo ad una colonna. Quindi bisogna procedere con alcuni accorgimenti:
+
+```{r}
+p1 <- apply.weekly(cts$new_cases, sum) %>% ggplot(aes(x=Index, y=new_cases)) +
+  geom_line() +
+  labs(x="", y="Nuovi casi/sett.") +
+  scale_x_date(date_breaks = "1 month", labels=label_date("%y.%b")) + 
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+p2 <- cbind(
+    apply.weekly(cts$new_deaths, sum),
+    apply.weekly(cts$icu_patients, sum)
+) %>% ggplot() +
+  geom_line(aes(x=Index, y=new_deaths, color="Decessi")) +
+  geom_line(aes(x=Index, y=icu_patients, color="T. intensiva")) +
+  labs(x="Data", y="Dati settimanali") +
+  scale_x_date(date_breaks = "1 month", labels=label_date("%y.%b")) + 
+  scale_color_manual(name="Metrica", values=c(2,3)) +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
+  theme(legend.position="bottom") 
+plot_grid(p1, p2, align="v", nrow=2) 
+```
+
+Come si vede, si può usare `cbind` per ricostruire un `xts` dopo aver applicato le funzioni di somma settimanale alle colonne di interesse.
+
+In questo modo si possono realizzare anche grafici abbastanza complessi, *localizzando ad esempio l'asse dei tempi*: 
+
+```{r}
+Sys.setlocale("LC_TIME", "it_IT.UTF-8")
+cbind(
+  apply.weekly(cts$new_tests, sum),
+  apply.weekly(cts$positive_rate, max)
+) %>% 
+  ggplot() +
+  geom_point(aes(x=Index, y=new_tests, size=positive_rate), pch=21, color="black", fill=gray(0.75)) +
+  geom_line(aes(x=Index, y=new_tests, color=positive_rate)) +
+  scale_color_viridis_c() +
+  scale_x_date(date_breaks = "1 month", labels=label_date("%y.%b")) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x="Data", y="Nuovi test/sett.", size="Positivi", color="Positivi")
+```
+
+Oltre che mediante la somma settimanale, i dati possono essere trattati anche mediante stimatori a finestra mobile di 7 giorni:
+
+```{r}
+ctsm <- rollmedian(cts, 7) 
+ctsm %>%
+  ggplot(aes(x=new_cases, y=positive_rate, color=new_tests)) +
+  geom_point(alpha=0.5) +
+  scale_color_viridis_b() +
+  labs(x="Nuovi casi", y="Positivi (%)", color="Nuovi test")
+```
+
+In questo caso particolare possiamo notare una clusterizzazione dei dati. Proviamo ad approfindire per capirne il motivo. Useremo la funzione base `cut` per assegnare un indice di classe in corrispondenza di un dato intervallo sul numero di test effettuati al giorno. Si noti inoltre che se vogliamo usare verbi `dplyr` su un ` xts` dobbiamo prima convertirlo in data frame mediante `fortify`: mentre infattiquesto passaggio è implicito in `ggplot`, non lo è nelle funzioni ` dplyr`.
+
+```{r}
+ctsm$cat <- cut(ctsm$new_tests, 
+               breaks=c(0, 100, 310, 500, 5000) * 1000)
+ctsm %>% fortify() %>%
+  filter(!is.na(new_tests)) %>%
+  ggplot(aes(x=new_cases, y=positive_rate, color=factor(cat))) +
+  geom_point(alpha=0.5) +
+  geom_smooth(method="lm") +
+  scale_x_continuous(labels=~.x/1000) +
+  scale_color_manual(values = c(2:6)) +
+  facet_wrap(~cat) +
+  labs(x="Nuovi casi (migliaia)", y="Positivi (%)", color="Nuovi test")
+```
+Cioè con numeri diversi di campioni ci sono diverse relazioni tra percentuale di positivi e nuovi casi individuati.
+
+Vediamo ora di vedere queste classi come sono mappate sul tempo:
+
+```{r}
+ctsm %>% fortify() %>%
+  filter(!is.na(new_tests)) %>%
+  ggplot(aes(x=Index, y=new_cases, color=factor(cat))) +
+  geom_point(alpha=0.5) +
+  scale_color_manual(values = c(2:6)) +
+  scale_x_date(date_breaks = "1 month", labels=label_date("%y.%b")) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x="Data", y="Nuovi casi", color="Classe") 
+```
+
+
+## Diamanti grezzi!
+
+L'analisi dei sistemi multivariati richiede sempre particolare attenzione. Sono due i casi in cui l'analista può essere fuorviato dai dati:
+
+1. fattori confusi
+2. fattori non ortogonali
+
+In entrambi i casi le tecniche di *Design of Experiments* viste nella Parte 1 sono d'aiuto.
+
+![https://xkcd.com/2560/](confounding_variables.png){width=3in}
+
+### Fattori confusi
+
+La libreria `tidyverse` contiene la `tibble` `diamonds`, un elenco di caratteristiche di `r length(diamonds$cut)` diamanti. Vediamo come il prezzo dipende da alcuni fattori:
+
+```{r}
+ggplot(diamonds, aes(x=reorder(cut, price, FUN=median), y=price)) + 
+  geom_boxplot() + 
+  coord_flip() +
+  labs(x="Taglio", y="Prezzo")
+head(diamonds$cut)
+```
+Come si vede, nonostante `Ideal` sia il taglio migliore e `Fair` il peggiore, *in media* quest'ultimo è associato ai prezzi maggiori, e il primo ai minori.
+
+Analogamente, in funzione di colore e chiarezza:
+
+```{r}
+p1 <- ggplot(diamonds, aes(x=color, y=price)) +
+  geom_boxplot() + 
+  labs(x="Colore", y="Prezzo")
+p2 <- ggplot(diamonds, aes(x=clarity, y=price)) +
+  geom_boxplot() + 
+  labs(x="Chiarezza", y="Prezzo")
+plot_grid(p1, p2)
+```
+In questo caso i diamanti peggiori sono di colore `J` (giallognoli) e chiarezza `I1`, cioè con inclusioni visibili a occhio nudo. **Eppure sono tra i più cari. Perchè?**
+
+Il motivo di questa conclusione fuorviante è che stiamo trascurando un fattore confuso: la dimensione (`carat`).
+
+Possiamo studiare l'effetto della dimensione con grafici come quelli realizzati più su, oppure possiamo realizzare un boxplot, raggruppandoli per classi spaziate di 0.1 carati:
+
+```{r}
+diamonds %>% 
+  filter(carat < 3) %>%
+  ggplot(aes(x = carat, y = price)) + 
+    geom_boxplot(mapping = aes(group = cut_width(carat, 0.1)), varwidth = T)
+```
+
+Il parametro `varwidth=T` adatta la larghezza dei boxplot in funzione del numero di osservazioni per ogni classe. Un altro modo per visualizzare la numerosità delle classi è raggruppando le osservazioni per classi di uguale numerosità, diciamo 20 diamanti; in questo caso i box più larghi sono quelli meno numerosi:
+
+```{r}
+diamonds %>% 
+  filter(carat < 3) %>%
+  ggplot(aes(x = carat, y = price)) + 
+    geom_boxplot(mapping = aes(group = cut_number(carat, 20)))
+```
+
+Focalizziamoci sui diamanti con carati inferiori al 99-esimo percentile, cioè
+```{r}
+(cmax <- quantile(diamonds$carat, p=0.99))
+```
+
+Inoltre, data la grande variazione di prezzo trasformiamo il modello in base al logaritmo del prezzo:
+
+```{r}
+diamonds2 <- diamonds %>%
+  filter(carat < cmax) %>%
+  mutate(lprice = log10(price), lcarat=log10(carat))
+
+diamonds2 %>%
+  ggplot(aes(x=lcarat, y=lprice)) +
+  geom_hex(bins=50) + 
+  geom_smooth(method="lm", color="red") +
+  scale_fill_viridis_c()
+```
+
+È evidente un andamento lineare sul piano bilogaritmico. Ora possiamo creare un modello lineare sui dati trasformati e *sottrarlo* ai dati originali, in modo da poter studiare, indipendentemente dalla dimensione, l'effetto di colore, taglio e chiarezza sul prezzo.
+
+```{r}
+diamonds2.lm <- lm(lprice~lcarat, data=diamonds2)
+fit <- diamonds2 %>%
+  data_grid(carat = seq_range(carat, 20)) %>%
+  mutate(lcarat = log10(carat)) %>%
+  add_predictions(diamonds2.lm, "lprice") %>%
+  mutate(price = 10^lprice)
+
+ggplot(diamonds2, aes(x=carat, y=price)) +
+  geom_hex(bins=50) + 
+  geom_line(data=fit, color="red", size=2) +
+  scale_fill_viridis_c()
+```
+
+Ora aggiungiamo i residui a `diamonds2`:
+
+```{r}
+(diamonds2 <- diamonds2 %>%
+  add_residuals(diamonds2.lm, "residual price")) %>%
+  ggplot(aes(x=lcarat, y=`residual price`)) + 
+    geom_hex(bins=50) +
+    scale_fill_viridis_c()
+```
+
+Finalmente possiamo studiare l'effetto di taglio, colore e chiarezza:
+
+```{r}
+p1 <- ggplot(diamonds2, aes(x=cut, y=`residual price`)) + geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+p2 <- ggplot(diamonds2, aes(x=color, y=`residual price`)) + geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+p3 <- ggplot(diamonds2, aes(x=clarity, y=`residual price`)) + geom_boxplot() +
+  theme(axis.text.x = element_text(angle = 90, vjust = 0.5, hjust=1))
+plot_grid(p1, p2, p3, nrow=1, align="h")
+```
+
+E questi grafici, depurati dal fattore confuso `carat`, mostrano l'effettiva influenza di questi fattori sulla *componente residua del prezzo*.
+
+È evidente, quindi, che in generale una analisi preliminare dei fattori che influenzano un dato processo è fondamentale per assicurarsi che non ci siano fattori confusi che mascherano l'effetto di altri fattori.
+
+### Fattori non ortogonali
+
+In certi casi l'interazione tra due fattori rilevata da un'analisi ANOVA significa che si sono scelti fattori correlati.
+
+Consideriamo l'esempio di un processo di stampa 3D a deposizione di fuso (FDM): due importanti parametri della macchina sono la velocità di estrusione (mm$^3$/min) e la velocità di spostamento della testina (mm/min). Carichiamo i dati di un piano fattoriale a due livelli, ripetuto tre volte, per i due fattori `Extr` e `Feed`, in cui la resa è la rsistenza del materiale.
+
+```{r}
+df <- read_delim(mydata("3dprint.txt"), comment="#", col_types = c(rep="i", Feed="d", Extr="d"))
+df.lm <- lm(Strength~Feed*Extr, data=df)
+anova(df.lm)
+```
+
+La tabella ANOVA indica un'elevata significatività dell'interazione tra i due parametri e una modesta significatività della velocità di estrusione, mentre la velocità di avanzamento risulta non significativa. Come mai l'effetto più intenso è quello di un'interazione? come mai la velocità non ha effetto, ma lo ha la sua interazione?
+
+Interpoliamo il modello sul dominio di analisi e realizziamo un diagramma a livelli della *superficie di risposta*:
+
+```{r}
+df.lm <- lm(Strength~Feed:Extr + Extr, data=df)
+df %>%
+  data_grid(Feed=seq_range(Feed, 20), Extr=seq_range(Extr, 20)) %>%
+  add_predictions(df.lm, "Strength_pred") %>%
+  ggplot(aes(x=Feed, y=Extr, z=Strength_pred)) +
+    geom_contour_filled() + 
+    labs(fill="Strength")
+```
+
+La superficie di risposta ha una forma a sella: la porosità è alta quando entrambi i fattori sono bassi o quando entrambi sono alti, mentre è bassa quando sono di segno opposto. Avere una forte interazione significa che l'effetto di un aumento di velocità dipende dal *livello* dell'altro fattore, velocità di estrusione.
+
+Ragionando sul processo fisico, ci rendiamo conto che `Feed` e `Extr` si combinano nella *sezione* di materiale depositato (come `Extr/Feed`), e tanto più essa è piccola, tanto più alta è la probabilità di avere pori, quindi minore resistenza. Altresì, le combinazioni $(-1,-1)$ e $(+1,+1)$ dei due fattori producono di fatto la stessa sezione depositata, e quindi rappresentano la stessa condizione di prova.
+
+È quindi preferibile considerare come fattore la sezione depositata e la velocità di estrusione:
+
+```{r}
+(df2 <- df %>% mutate(Xsec = Extr/Feed)) %>% filter(rep==1) %>% select(Feed:Xsec)
+df2.lm <- lm(Strength~Extr*Xsec, data=df2)
+anova(df2.lm)
+```
+
+Come si vede, il modello ora contiene solo l'effetto dei due fattori, mentre l'interazione risulta non significativa. In grafico:
+
+```{r}
+df2.lm <- lm(Strength~Extr + Xsec, data=df2)
+df2 %>%
+  data_grid(Extr=seq_range(Extr, 20), Xsec=seq_range(Xsec, 20)) %>%
+  add_predictions(df2.lm, "Strength_pred") %>%
+  ggplot(aes(x=Extr, y=Xsec, z=Strength_pred)) +
+    geom_contour_filled() + 
+    labs(fill="Strength")
+```

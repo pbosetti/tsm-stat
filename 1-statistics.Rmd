@@ -1,0 +1,967 @@
+---
+title: |
+  ![](logo.png){height=0.5in} ![](logo-TSM.png){height=0.4in}
+  
+  --- Parte 1. ---
+  
+  Statistica base con GNU-R
+author: "Paolo Bosetti (`paolo.bosetti@unitn.it`)"
+date: "Data creazione: `r lubridate::now()`"
+output: 
+  pdf_document: 
+    toc: yes
+    fig_caption: yes
+    number_sections: yes
+    highlight: pygments
+    toc_depth: 4
+    extra_dependencies:
+      babel: ["italian"]
+  documentclass: article
+  classoption: a4paper
+header-includes:
+  - \usepackage{fancyhdr}
+  - \pagestyle{fancy}
+  - \fancyhead[CO,CE]{\includegraphics[height=0.5cm]{by-nc-sa.png}}
+  - \fancyfoot[CO,CE]{Corso di GNU-R e RStudio --- paolo.bosetti@unitn.it}
+  - \fancyfoot[LE,RO]{\thepage}
+---
+
+```{r, echo=FALSE}
+knitr::opts_chunk$set(
+  fig.align="center", 
+  fig.dim=c(7, 4), 
+  out.height="2in")
+library(latex2exp)
+source("myfunctions.R")
+```
+
+# Numeri casuali e Distribuzioni
+R dispone di una completa serie di funzioni per la gestione di numeri casuali, dalla generazione al calcolo della distribuzione. Le funzioni hanno nomi costituiti secondo questo schema: `<r|d|p|q><dist_name>()`, dove `dist_name` è un nome breve per la corrispondente distribuzione (ad es. `norm` per la *normale*) e il prefisso sta per:
+
+* `r` (random): genera numeri casuali
+* `d` (density): funzione densità di distribuzione (*Probability Density Function*, PDF)
+* `p` (probability): funzione di probabilità cumulata (*Cumulative Distribution Function*, CDF )
+* `q` (quantile): funzione quantile, inversa della CDF
+
+## Distribuzioni di probabilità discrete
+
+Le distribuzioni discrete hanno valore solo sui numeri interi. Le più comuni sono `geom` (geometrica), `binom` (binomiale), `pois` (Poisson). I grafici vengoni generalmente riportati con linee verticali, usando l'opzione `typ="h"` nei comandi di plot:
+
+```{r}
+x <- 1:20
+plot(dgeom(x, prob=0.2), 
+     typ="h",
+     xlab="x",
+     ylab="p(x)",
+     main="Densità di distribuzione geometrica")
+```
+
+La CDF è invece preferibile plottarla a step, opzione `typ="s"`. Per chiarezza, confrontare il grafico otenuto con `typ="S"` (maiuscolo). 
+
+Inoltre, ricordarsi che la CDF della variabile casuale $X$ può riportare la coda alta (upper tail):
+$$
+F_{X,U}(x) = \mathrm{P}(X \leq x) = \sum_{x_i\leq x}p(x_i)
+$$
+e la coda bassa (lower tail):
+$$
+F_{X,L}(x) = \mathrm{P}(X > x) = \sum_{x_i > x}p(x_i)
+$$
+Per default, R considera la *lower tail* (`lower.tail=TRUE`):
+
+```{r}
+plot(pgeom(x, prob=0.2), 
+     typ="s",
+     xlab="x",
+     ylab="p(x)",
+     ylim=c(0,1),
+     main="Densità di distribuzione geometrica",
+     col="2")
+lines(pgeom(x, prob=0.2, lower.tail=F), 
+     typ="s",
+     xlab="x",
+     ylab="p(x)",
+     ylim=c(0,1),
+     main="Densità di distribuzione geometrica",
+     col=3)
+grid()
+abline(h=pgeom(5, prob=0.2), lty=2, col=4)
+legend("right", 
+       legend=c("Lower tail", "Upper tail", "p(5)"), 
+       lty=c(1, 1, 2), 
+       col=2:4, 
+       bg="white")
+```
+
+## Distribuzioni di probabilità continue
+
+Poco cambia rispetto alle distribuzioni discrete, salvo l'ovvia differenza che le funzioni hanno valore sui reali e che la CDF è definita come:
+$$
+F_{X,U}(x) = \mathrm{P}(X \leq x) = \int_{-\infty }^x f(\xi)\mathrm d\xi
+$$
+Inoltre, essendo la funzione continua posso creare il grafico con la funzione `curve()`:
+
+```{r}
+curve(dnorm(x), from=-4, to=4, ylab="f(x)", 
+      main="Densità di probabilità normale",
+      col="blue")
+abline(v=c(-3, 0, 3), lty=2)
+abline(h=0)
+```
+
+Per realizzare il grafico della funzione quantile è necessario ricordarsi che essa è l'inversa della CDF e, quindi, è definita solo nell'intervallo $(0,1)$ e va all'infinito agli estremi:
+
+```{r}
+curve(qnorm(x), from=0.001, to=0.999, n=1000,
+      ylab=TeX("f^{-1}(p)"),
+      xlab="p",
+      col="blue",
+      main="Quantile normale")
+abline(h=0, lty=2)
+abline(v=c(-1, 0, 1), lty=2)
+```
+Si noti l'uso della funzione `TeX` della librera `latex2exp` per inserire formule nelle etichette dei grafici ($f^{-1}(p)$).
+
+Le funzioni che cominciano con `r` sono utili per *generare* vettori di numeri casuali. Per ottenere sempre la setessa sequenza pseudo-casuale si può impostare un seme:
+
+```{r}
+set.seed(123)
+x <- rnorm(100)
+x[1:5]
+cat(paste("Media:", mean(x)),
+    paste("Mediana:", median(x)),
+    paste("Deviazione standard:", sd(x)),
+    sep="\n")
+```
+
+Si noti come le funzioni `cat` e `paste` possono essere utilizzate per comporre *testo interpolato* (cioè testo che contiene i valori di espressioni valutate).
+
+Possiamo studiare la *convergenza in distribuzione*:
+
+```{r}
+set.seed(123)
+n <- 1:1000
+plot(sapply(n, function(x) mean(rnorm(x))), 
+     typ="l",
+     col="darkgrey",
+     xlab="Numero elementi",
+     ylab="Media",
+     main="Convergenza della media a N(0,1)")
+abline(h=0, col="red", lty=1)
+```
+
+Si noti che i dati sono stati generati non con un ciclo `for` ma con la funzione `sapply`: laddove possibile, le funzioni di mappatura sono sempre più veloci di un ciclo.
+
+Vediamo ora come utilizzare i data frame per realizzare struture dati più complesse:
+
+```{r}
+df <- data.frame(x=seq(-4,4,0.1))
+df$norm <- dnorm(df$x)
+df$t <- dt(df$x, 3)
+plot(norm~x, data=df, col=2, typ="l", ylab="f(x)")
+lines(t~x, data=df, col=3)
+legend("topright",
+       legend=c("Normale", "T di Student"),
+       lty=1,
+       col=2:3)
+abline(v=0, lty=2)
+```
+
+Si noti come, una volta creato, è possibile aggiungere nuove colonne ad un data frame con una semplice assegnazione mediante l'operatore `$`. Inoltre, la funzione `plot` è una *funzione generica*, che supporta cioè anche il metodo per la classe `formula`. In questo caso, la formula `norm~x` significa *colonna `norm` in funzione della colonna `x`*.
+
+# Lettura e scrittura file
+
+## Scrivere file
+In R scrivere dati su file è relativamente semplice. Ci sono sostanzialmente tre soluzioni:
+
+1. *salvare* oggetti in formato proprietario R: `save()` (e l'opposto `load()`)
+2. *scrivere* testo libero su file ASCII: `cat()`
+3. *scrivere* dati tabulati ASCII: `write.table()` e `write.csv()`
+
+La prima soluzione non permette lo scambio dati con altri software. La seconda soluzione è più flessibile, mentre la terza è più semplice.
+
+In particolare, `cat()` e `write.table()` possono essere usate in sequenza per salvare una tabella anticipata da qualche riga di commento.
+
+Creiamo una tabella delle probabilità cumulate della distribuzione T. Per inciso, simili tabelle erano utilizzate per effetuare i T-test prima dell'avvento dei calcolatori.
+
+```{r, warning=F}
+file <- "t_values.txt"
+n <- 1:120
+p <- c(0.4, 0.25, 0.1, 0.05, 0.025, 0.01, 0.005, 0.0025, 0.001, 0.0005)
+m <- t(sapply(n, function(x) round(qt(p, x, lower.tail=F), 3)))
+rownames(m) <- as.character(n)
+colnames(m) <- as.character(p)
+cat(file=file, "# Probabilità della distribuzione T\nDoF ")
+write.table(m, file, quote = F, sep="\t", append = TRUE)
+knitr::kable(head(m))
+```
+
+Come si vede, `cat()` oltre che per stampare stringhe in standard output può essere utilizzato per scrivere su file: è sufficiente passare il parametro `file`.
+
+La matrice `m` può anche essere convertita in data frame per maggiore comodità, e esportata i ìn formato di interscambio CSV. Si noti comunque che `write.csv()` supporta in input sia matrici che data frame.
+
+```{r}
+df <- as.data.frame(m)
+write.csv(df, file="t_values_en.csv")
+write.csv2(df, file="t_values_it.csv")
+```
+
+Si noti che `write.csv()` usa la virgola come separatore di campo e il punto come separatore dei decimali, mentre `write.csv2()` usa il punto e virgola come separatore di campo e la vorgola come separatore dei decimali. Quindi, `write.csv2()` è da usarsi se si intende importare il file creato, ad esempio, in versioni di Excel localizzate in Italiano o in lingue che usano la vorgola come separatore decimale.
+
+## Leggere da file
+
+La lettura da file di testo libero può essere effettuata medante la funzione `scan()`. Tuttavia nella maggior parte dei casi è sufficiente leggere tabelle ASCII o csv. In questo caso si usano le funzioni `read.table()` o `read.csv()`/`read.csv2()`. Si noti che in questo caso la stringa che specifica il percorso di origine è un URI generico, quindi può essere sia un file locale che un percorso HTTP o HTTPS:
+
+```{r}
+df <- read.table("http://repos.dii.unitn.it:8080/data/diet.dat", header=T)
+str(df)
+```
+
+Per comodità, visto che dalla stessa URI caricheremo altre risorse, ci definiamo una funzione di utilità:
+
+```{r}
+mydata <- function(file) paste0("http://repos.dii.unitn.it:8080/data/", file)
+df <- read.table(mydata("diet.dat"), header=T)
+```
+
+
+In particolare, l'opzione `header=T` specifica che i dati contengono i nomi delle colonne nella prima riga di intestazione.
+
+## Serializzazione
+
+A volte è utile *serializzare* una struttura dati, ovvero convertirla in un formato che può essere scritto su file e passato ad una differente sessione di R. Ciò può essere fatto nei seguenti modi:
+
+* `dump()`: converte un elenco di oggetti (passato come vettore di *nomi*) in una rappresentazione R e la salva su file (di default, `dumpdata.R`); questo file può essere ricaricato mediante `source()`
+* `save()`: salva uno o più oggetti in formato binario, ricaricabili con `load()`
+* `save.image()`: salva *tutto* l'ambiente in un file (default `.RData`): consente di chiudere la sessione e riavviare in seguito recuperando esattamente tutto quanto fatto precedentemente.
+
+Si noti che `save()` e `save.image()` non sono garantiti funzionare tra una versione e l'altra di R, e sono quindi sconsigliati per il salvataggio di dati a lungo termine.
+
+# Statistica descrittiva
+## Stimatori
+
+È spesso utile descrivere un campione di numeri casuali mediante *indicatori* (come media, moda, mediana, deviazione standard) e mediante grafici. Tra i metodi grafici più utili ci sono gli istogrammi, di box-plot e i diagrammi quantile-quantile.
+
+Vediamo gli stimatori più comuni:
+
+```{r}
+v <- rnorm(10)
+mean(v)
+median(v)
+var(v)
+sd(v)
+sd(v) == sqrt(var(v))
+quantile(v)
+```
+
+Si noti la funzione `quantile()`: l'argomento opzionale `probs` è il vettore di probabilità per cui si vogliono i quantili (default a `seq(0, 1, 0.25)`).
+
+Purtroppo R non fornisce una funzione per calcolare la moda (cioè il valore più frequente). È però facile costruirla:
+
+```{r}
+set.seed(123)
+(l <- sample(letters, replace = T)) # campionamento con reinserimento
+unique(l) # valori unici
+match(l, unique(l)) # indici dei valori unici che costruiscono l
+tabulate(match(l, unique(l))) # conta le ripetizioni degli indici
+which.max(tabulate(match(l, unique(l)))) # posizione del massimo
+unique(l)[which.max(tabulate(match(l, unique(l))))] # moda
+
+mymode <- function(x) {
+  xu <- unique(x)
+  xu[which.max(tabulate(match(x, xu)))]
+}
+mymode(l)
+```
+
+Si noti che la funzione `mode()` già esiste e ritorna lo *storage mode* di un oggetto. Inoltre, si noti che `mymode()` restituisce *il primo* elemento più frequente, tralasciando eventuali parimerito. In genere, è opportuno ordinare il vettore in modo da restituire il più comune e più grande (o più piccolo) elemento:
+
+```{r}
+mymode(sort(l, decreasing = T))
+```
+
+È frequente il caso in cui i dati in ingresso hanno valori mancanti, rappresentabili in R con la costante speciale `NA`. Gli stimatori statistici hanno l'opzione `na.rm` (default `FALSE`) che specifica se rimuovere o meno i valori mancanti (e quindi modificare la dimensione del vettore) prima di calcolare la stima:
+
+```{r}
+set.seed(123)
+v <- sample(10)
+v[sample(10, size=2)] <- NA
+v
+mean(v) # nota: x + NA = NA, per ogni x
+mean(v, na.rm=T)
+```
+
+Le funzioni `na.fail()`, `na.omit()` sono d'aiuto a manipolare i casi di NA, e sono automaticamente invocate dalle funzioni che supportano la gestione dei NA.
+Spesso si decide di sostituire i NA con valori medi dei restanti elementi:
+
+```{r}
+v[is.na(v)] <- mean(v, na.rm=T)
+v
+mean(v)
+```
+
+Sono utili anche gli stimatori di covarianza:
+$$
+\mathrm{COV}(X, Y) = \frac{1}{n}\sum_{i=1}^n (x_i - \mu_x)(y_i - \mu_y)
+$$
+e correlazione:
+$$
+\mathrm{CORR}(X, Y) = \frac{\mathrm{COV}(X, Y)}{\sigma_X \sigma_Y}~~\in [-1, 1]
+$$
+
+In R:
+
+```{r}
+set.seed(123)
+n <- 10
+x1 <- rnorm(n, 3, 0.5)
+x2 <- rnorm(n, 6, 1)
+x3 <- x1 * 2 + rnorm(n, sd=0.1)
+c(cov(x1, x2), cov(x1, x3))
+c(cor(x1, x2), cor(x1, x3))
+```
+
+
+## Metodi grafici
+
+È spesso utile rappresentare un vettore di dati casuali mediante metodi grafici. Possiamo utilizzare un diagramma a dispersione per visalizzare l'andamento ed evidenziare eventuali tendenze, e un istogramma per studiarne la distribuzione. La funzione kernel densty è inoltre una versione continua dell'istogramma, molto utile quando la dimensione del campione è molto grande.
+
+```{r}
+set.seed(123)
+n <- 100
+v <- rnorm(n, 12, 1.5)
+plot(v)
+abline(h=quantile(v), col="gray", lty=2)
+abline(h=mean(v), col="red")
+```
+La serie non mostra tendenze o pattern (ovviamente!) e studiando i quantili osserviamo che la distribuzione appare leggermente gobab a sinistra, dato che la mediana è leggermente più bassa della media.
+
+L'istogramma è creato dalla funzione `hist()`. Il numero di canne, o *bin*, in un istogramma è controllato dall'argomento `breaks`, che accetta o un vettore di punti di interruzione, o il nome dell'algoritmo (`"Sturges", "Scott", "FD"/"Freedman-Diaconis"`).
+
+La versione continua dell'istogramma è ottenuta con la funzione `density()`, che è utile confrontare con la distribuzione di riferimento (in questo caso la normale):
+
+```{r}
+hist(v, freq=F) # freq=T riporta i conteggi invece delle frequenze
+lines(density(v))
+curve(dnorm(x, mean(v), sd(v)), col="red", lty=2, add=T)
+abline(v=quantile(v), col="gray", lty=2)
+abline(v=mean(v), col="red", lty=2)
+```
+
+La densità e l'istogramma confermano una leggera gobba a sinistra, anche se---come c'era da aspettarsi---il campione appare distribuito normalmente.
+
+La *verifica di normalità* è un tema molto importante in statistica: generalmente si preferisce associare a tale verifica un *test statistico* che consenta di associare una probabilità di errore al risultato (come vedremo nel capitolo successivo). Tuttavia i metodi grafici risultano comunque utili a integrare i test. Ancora più utile dell'istogramma è il **diagramma quantile-quantile** (o *QQ-plot*), che confronta i quantili teorici con quelli campionari. Tanto più il grafico è allineato alla diagonale, tanto più la distribuzione del campione è simile a quella di riferimento (tipicamente la normale).
+
+```{r}
+vu <- runif(length(v), 8, 15)
+par(mfrow=c(1,2)) # grafici multipli su una riga, due colonne
+qqnorm(v, main="Campione normale")
+qqline(v, col="red")
+qqnorm(vu, main="Campione uniforme")
+qqline(vu, col="red")
+```
+
+Nel caso di campioni bivariati o multivariati uno strumento molto utile per l'osservazione preliminare dei dati è il boxplot. Carichiamo i dati che riportano il tempo di reazione di un processo chimico in funzione di due diversi *trattamenti*, cioè condizioni di processo:
+
+```{r}
+df <- read.table(mydata("twosample.dat"), header=T)
+str(df)
+boxplot(yield~treat, data=df, horizontal=T)
+```
+
+L'interfaccia più comoda utilizza una *formula*: `yield~treat` significa "plotta i valori della colonna `yield` raggruppati per valori della colonna `treat`". Ogni *box* è costituito da:
+
+* una linea nera spessa, che rappresenta la mediana della classe
+* un rettangolo, o *box*, che va dal primo al terzo quartile
+* due baffi, o *whisker*, che si estendono al punto più estremo ma non oltre 1.5 volte l'intervallo interquartile (questo rapporto è configurabile)
+* i punti più distanti dell'estensione del *whisker* sono marcati come possibili *outlier*
+
+Tanto più due box sono sfalsati, tanto più è probabile che le due classi siano significativamente distinti, e viceversa. Un'analisi più dettagliata di cosa vuol dire "significativamente distinti" richiede ovviamente l'introduzione di un **test di inferenza**.
+
+A volte è utile reaizzare un *diagramma di Pereto* per visualizzare la distribuzione cumulativa. La libreria `qcc` mette a disposizione il la funzione `pareto.chart()`:
+
+```{r}
+library(qcc)
+set.seed(123)
+n <- 10
+x <- exp(rnorm(n, mean=5, sd=1.5))
+names(x) <- letters[1:n]
+pareto.chart(x)
+```
+Da cui si vede, ad esempio, che i primi due elementi, `f` e `c`, sono responsabili del 75% dell'effetto.
+
+
+# Statistica inferenziale
+
+Fare inferenza significa estendere l'osserazione di un campione al comportamento dell'intera popolazione. Il più semplice test di inferenza è il test di Student, che studia la *media* di un campione. Ogni test di inferenza, per complicato che sia, si conclude sempre nel calcolare la probabilità di errore, detta *p-value*, di commettere un errore di tipo I, ossia rifiutare l'ipotesi nulla (non-significatività) quando essa è invece vera.
+
+## Test di Student
+### A un campione
+Il test di Student può essere a uno o a due campioni, a uno o a due lati. Inoltre, se è un test a due campioni può assumere che i campioni abbiano varianza uguale o no. La funzione da utilizzare in questo caso è la `t.test()`.
+
+Cominciamo con qualche esempio ad un campione.
+
+```{r}
+set.seed(123)
+n <- 10
+m <- 12.1
+s <- 0.1
+v <- rnorm(n, m, s)
+quantile(v)
+```
+
+Vogliamo valutare la coppia di ipotesi:
+\begin{eqnarray*}
+H_0:&\mu = 12 \\
+H_1:&\mu \neq 12
+\end{eqnarray*}
+e rifiutare l'ipotesi nulla quando la probabilità di un errore di tipo I è inferiore al valore di soglia $\alpha=1\%$:
+
+```{r}
+alpha <- 0.01
+(tt <- t.test(v, alternative="two.sided", mu=12, conf.level=1-alpha))
+```
+
+Il *p-value* risulta `r round(tt$p.value*100, 2)`% che è minore della soglia $\alpha$, quindi possiamo rifiutare $H_0$ con una probabilità d'errore pari a `r round(tt$p.value*100, 2)`%.
+
+Il risultato del test di Student riporta anche i limiti dell'intervallo di confidenza al `r (1-alpha)*100`%: tale intervallo è centrato sulla media del campione ed ha un'ampiezza che dipende dal parametro `conf.level`: se il valore target (12) è *esterno* a tale intervallo, allora possiamo rifiutare $H_0$ con una probabilità d'errore inferiore a `r alpha*100`%.
+
+Ne consegue che si può anche fare a meno di specificare il valore target $\mu_0$ e guardare solo l'intervallo di confidenza (che non dipende da $\mu_0$):
+
+```{r}
+t.test(v, conf.level=0.99)
+```
+
+Come si vede, un ipotetico $\mu_0=12$ è esterno all'intervallo di confidenza, mentre non lo sarebbe, ad esempio, $\mu_0=12.1$. Inoltre, è facile verificare che **l'ampiezza dell'intervallo di confidenza cresce se $\alpha$ cresce**.
+
+Possiamo anche verificare un'ipotesi ad un lato:
+\begin{eqnarray*}
+H_0:&\mu = 12 \\
+H_1:&\mu > 12
+\end{eqnarray*}
+
+```{r}
+t.test(v, alternative="greater", mu=12, conf.level=1-alpha)
+```
+
+Come si vede, dato che escludiamo già che il valore atteso sia $\mu < 12$, la probabilità di errore, o *p-value*, risulta diminuita (è la metà).
+
+### A due campioni
+
+Recuperiamo lo stesso data frame utilizzato per realizzare il box plot e verifichiamo quanto i due trattamenti possano essere considerati significativamente differenti con la coppia di ipotesi:
+\begin{eqnarray*}
+H_0:&\mu_1 = \mu_2 \\
+H_1:&\mu_1 \neq \mu_2
+\end{eqnarray*}
+
+Si noti che la funzione `t.test()` per due campioni può essere invocata passando due vettori oppure una formula e un data frame (come per `boxplot()`). Quest'ultima soluzione è generalmente più comoda:
+
+```{r}
+t.test(yield~treat, data=df)
+# oppure:
+# t.test(df$yield[df$treat==1,], df$yield[df$treat==2,])
+```
+
+Si noti che l'intestazione parla di "Welch Two Sample t-test": si tratta del test applicato ai casi in cui i due campioni provengano da popolazioni con uguale varianza. Questa condizione viene specificata con l'opzione `var.equal`, default a `FALSE`.
+
+Prima di effettuare il test è quindi opportuno verificare questa condizione con un altro test: il test di varianza:
+
+```{r}
+alpha <- 0.95
+(vt <- var.test(yield~treat, data=df, conf.level=1-alpha))
+(tt <- t.test(yield~treat, data=df, 
+              var.equal=vt$p.value > alpha,
+              conf.level=1-alpha))
+```
+
+Questa coppia di test mi conferma quindi che:
+
+* i due campioni hanno varianze *significativamente* differenti, con *p-value* uguale a `r vt$p.value`
+* le medie dei due campioni sono *significativamente* differenti, con *p-value* uguale a `r tt$p.value`
+
+### T-test accoppiato
+
+Spesso è utile raggruppare le osservazioni dei due campioni a due a due, in modo da escludere effetti ambientali ignote e incontrollate. È il caso ad esempio di quando si voglia confrontare la differente efficacia di due strumenti *indipendentemente dall'abiente in cui operano*, che si sa poter essere non costante.
+
+Supponiamo ad esempio di voler confrontare la velocità di penetrazione di due diverse trivelle per prospezioni geologica, pur sapendo che essa dipende dalle caratteristiche del terreno, che sono a priori ignote e che possono cambiare localmente quando la distanza tra due perforazioni è superiore alla distanza minima tra due perforazioni.
+
+Generiamo artificialmente i dati per mostrare la superiorità del test accoppiato in queste condizioni.
+
+```{r}
+set.seed(123)
+n <- 10
+v1 <- 15
+v2 <- 16
+s <- 0.5
+df <- data.frame(tool=rep(c("A", "B"), n), soil=rep(rnorm(n, 0, 1), each=2), t.vel=NA)
+df$t.vel[df$tool=="A"] <- rnorm(n, v1, s)
+df$t.vel[df$tool=="B"] <- rnorm(n, v2, s)
+df$vel <- df$t.vel + df$soil
+str(df)
+par(mfrow=c(1,2))
+boxplot(t.vel~tool, data=df)
+boxplot(vel~tool, data=df)
+```
+
+Come si vede, l'effetto del suolo (colonna `soil`) maschera l'effetto dell'utensile, che pure sembra significativo. Nella realtà, tuttavia, noi conosceremmo solo il comportamento complessivo, colonna `vel`, e quindi non saremmo in grado di stabilire una differenza tra le due trivelle. Ciò è ben evidente confrontando un test di Student normale e accoppiato:
+
+```{r}
+t.test(vel~tool, data=df, var.equal=T)
+t.test(vel~tool, data=df, paired=T)
+```
+
+Come si vede, mentre il test normale non dà significatività, il test accoppiato conferma la differenza tra le due trivelle con un *p-value* inferiore al 5%: la trivella B è la più veloce.
+
+### Curve caratteristiche operative
+
+Il test di Student mi fornisce solo la probabilità di un errore di tipo I, detta $\alpha$, corrispondente a un *falso positivo*. È utile però avere anche la probabilità di commettere un errore di tipo II, $\beta$, corrispondente ad un *falso negativo* o mancato allarme. Il complemento a 1 è noto come *potenza* di un test, ed è la sua affidabilità.
+
+È evidente che la potenza di un test dipende dalla dimensione del campione: più piccolo è il campione, più assa sarà la potenza a pari condizioni.
+
+Si costruicono quindi le cosiddette *curve caratteristiche operative* (OCC), che riportano la potenza o il suo complemento a 1 per un test effettuato su due campioni con una determinata dimensione e una data differenza tra le medie in rapporto alla varianza.
+
+Queste curve possono essere calcolate e costruite in R mediante le funzioni della famiglia `power.*.test()`. Per un T-test, ad esempio:
+
+```{r}
+d <- seq(0, 10, 0.05)
+nv <- c(3:10, 20, 30, 50)
+plot(d, 1-power.t.test(2, d)$power, typ="l",
+       ylab=TeX("$\\beta$=1-Power"),
+       xlab=TeX("$\\frac{d_1-d_2}{\\sigma}$"))
+for (i in seq_along(nv)) {
+  lines(d, 1-power.t.test(nv[i], d)$power, typ="l", col=i+1)
+}
+legend("topright", lty=1, col=seq_along(nv+1), 
+       legend=c(2,nv), 
+       title="Sample size",
+       cex=2/3)
+abline(v=2, col="gray", lty=2)
+abline(h=1-power.t.test(6, 2)$power, col="gray", lty=2)
+abline(h=0.2, col="gray", lty=2)
+```
+
+Ad esempio, si capisce che con 6 osservazioni per campione è possibile discriminare una differenza relativa di 2 con una probabilità di falso negativo pari a `r round((1-power.t.test(6, 2)$power) * 100, 1)`%. 
+
+Ma le curve possono essere usate anche per *determinare la dimensione del campione*: per discriminare una differenza relativa pari a 2 con una probabilità di falso negativo inferiore al 20% ho bisogno di almeno 6 osservazioni per campione.
+
+## ANOVA a una via
+
+Il test di Student consente di verificare la significatività di uno o due trattamenti. Se i trattamenti sono più di due, è consigliabile evitare di effettuare più test di Student su tutte le possibili combinazioni, perché in questo modo si finisce per ridurre la potenza complessiva del test, dato che le probabilità di errore si moltiplicano. 
+
+È preferibile effettuare quindi un test di analisi della varianza, o ANOVA, che studia la coppia di ipotesi:
+\begin{eqnarray*}
+H_0:&\mu_i = \mu_j~~\forall i\neq j \\
+H_1:&\exists (i,j)~|~\mu_i \neq \mu_j
+\end{eqnarray*}
+
+Si noti che il test *non dice* quali delle coppie di trattamenti $(i,j)$ siano statistiamente differenti, ma solo che c'è *almeno* una coppia che lo è.
+
+Vediamo come efettuare ANOVA in R su un dataset che contiene i valori di resistenza a trazione di filati misti in funzione di differenti percentuali di fibre di cotone. Il trattamento, in questo caso, è la percentuale di fibre di cotone nel filato.
+
+```{r}
+df <- read.table(mydata("cotton.dat"), header=T)
+str(df)
+```
+
+La colonna `Run` riporta l'ordine, casuale, in cui sono state effettuate le prove. È sempre importante casualizzare la sequenza operativa in modo da distribuire uniformemente l'effetto di fattori ignoti e incontrollabili (es. temperatura). Per inciso, in fase di preparazione di un esperimento si può generare una tabella come sopra con i comandi:
+
+```{r}
+levels <- seq(15, 35, by=5)
+rep <- 5
+df_prep <- data.frame(
+  Run=sample(length(levels)*rep), 
+  Cotton=rep(levels, each=rep),
+  Strength=NA)
+df_prep <- df_prep[order(df_prep$Run),] # riordinata secondo la sequenza casuale
+str(df_prep)
+```
+
+Questa tabella può poi essere ad esempio esportata in CSV per essere completata da chi esegue le prove, e poi nuovamente importata in R per l'analisi.
+
+Tornando all'analisi della varianza, essa prevede che si costruisca prima un *modello statistico* che correli la variabile dipendente `Strength` con la variabile indipendente `Cotton`. Matematicamente, il modello può essere scritto come:
+$$
+y_{ij} = \mu_i + \epsilon_{ij}, ~~ i = 1,\dots,n, ~ j=1, \dots,r
+$$
+o, più dettagliatamente, come:
+$$
+y_{ij} = \mu + \tau_i + \epsilon_{ij}, ~~ i = 1,\dots,n, ~ j=1, \dots,r
+$$
+dove $\mu$ è la media complessiva delle osservazioni, $\tau_i$ è l'effetto del trattamento $i$, $n$ è il numero di trattamenti, $r$ è il numero di repliche per ciascun trattamento, e $\epsilon_{ij}$ sono i *residui*, cioè la differenza tra il modello di regressione $\hat y_i=
+\mu+\tau_i$ e la generica osservazione $y_{ij}$. Si ipotizza che i residui siano distribuiti in maniera normale a media nulla.
+
+Sotto queste definizioni, la coppia di ipotesi di test può anche essere riscritta come:
+\begin{eqnarray*}
+H_0:&\tau_i = 0~~\forall i=1,\dots,n \\
+H_1:&\exists i~|~\tau_i \neq 0
+\end{eqnarray*}
+
+In R i modelli statistici vengono definiti mediante le *formule*. Nel nostro caso, il modello $y_{ij}=\mu_i+\epsilon{ij}$ può essere espresso come `Strength~Cotton` (lasciando i residui inespressi e sostituendo l'uguale con la `~`). La formula viene poi passata alla funzione `lm()` per creare l'oggetto modello. Il nome della funzione sta per *linear model*, perché consente di creare modelli statistici lineari *nei coefficienti*.
+
+```{r}
+df.lm <- lm(Strength~Cotton, data=df)
+anova(df.lm)
+```
+
+**ATENZIONE**: la prima cosa da verificare, in questi casi, è sempre il numero di gradi di libertà. Dalla teoria sappiamo che il numero di gradi di libertà del trattamento è $1-n$, nel nostro caso 4, mentre la tabella riporta 1. Ciò è dovuto al fatto che la colonna `Cotton` è di tipo `int`: in questi casi, R assume che non sia una variabile di raggruppamento, ma una variabile numerica veera e propria che nel nostro caso solo incideltalmente assume valori uguali 5 a 5.
+
+Per un'analisi della varianza, invece, `Cotton` dovrebbe rappresentare puramente una variabile categorica, detta *fattore*. Possiamo convertirla mediante la funzione `factor()`:
+
+```{r}
+df$Cotton <- factor(df$Cotton, ordered=T) # ordered qui è opzionale
+df.lm <- lm(Strength~Cotton, data=df)
+anova(df.lm)
+```
+
+Ora il *p-value* del fattore `Cotton` risulta molto basso, il che significa che almeno uno dei trattamenti ha un effetto significativo sulla resistenza dei filati (ma non sappiamo quale).
+
+Si noti che la tabella ANOVA può essere ottenuta alternativamente con la funzione `aov()`, un'interfaccia più antica agli stessi algoritmi:
+
+```{r}
+df.aov <- aov(Strength~Cotton, data=df)
+summary(df.aov)
+```
+
+Possiamo osservare la situazione mediante un box plot:
+
+```{r}
+boxplot(Strength~Cotton, data=df)
+```
+È evidente che almeno uno dei trattamenti è significatvo, ma quali di essi lo sono, reciprocamente? Come sopra detto è sconsigliabile effettuare coppie di test di Student, ma si può ottenere un'analisi più dettagliata mediante il **test di Tukey**.
+
+## Test di Tukey
+
+Il test di Tukey calcola i *p-value* per tutte le possibili differenze tra coppie di trattamenti, compensando automaticamente gli effetti di combinazione delle probabilità di errore:
+
+```{r}
+df.tuk <- TukeyHSD(df.aov)
+plot(df.tuk)
+```
+In particolare, le differenze a cui corrisponde un *p-value* minore del 5% sono:
+
+```{r}
+knitr::kable(df.tuk$Cotton[df.tuk$Cotton[,"p adj"] < 0.05,])
+```
+
+Le altre differenze sono invece **non significative**.
+
+## ANOVA a due vie
+
+È naturale estendere l'analisi della varianza a casi multivariati, in cui abbiamo due o più fattori, ciascuno con due o più trattamenti. Nel caso a due fattori con $a$ e $b$ trattamenti (o livelli) il modello statistico è:
+$$
+y_{ijk} = \alpha_i + \beta_j + (\alpha\beta)_{ij} + \epsilon_{ijk}, ~~ i=1\dots a,~j=1\dots b,~j=1\dots r
+$$
+e la formula R corrispondente è `y~a+b+a:b`, dove `a:b` significa *interazione* tra fattori *a* e *b*; la sintassi algebrica delle formule in R definisce che `a*b==a+b+a:b`, quindi la formula può essere scritta più sinteticamente come `y~a*b`. Vediamo un esempio, caricando un data frame che contiene 
+
+```{r}
+df <- read.table(mydata("battery.dat"), header=T)
+str(df)
+```
+
+Il data frame contiene i risultati di un esperimento che sudia l'effetto di differenti elettroliti (colonna `Material`) e differenti temperature di esercizio (colonna `Temperature`) sul tempo di scarica di una batteria (colonna `Response`). Materiale e temperatura sono entrambi variabili categoriche, quindi vanno convertite in fattori prima di effettuare l'analisi della varianza:
+
+```{r}
+df$Material <- factor(df$Material)
+df$Temperature <- factor(df$Temperature, ordered=T)
+df.lm <- lm(Response~Material*Temperature, data=df)
+anova(df.lm)
+```
+
+Come si vede, risultano significativi entrambi i fattori, anche se l'interazione lo è meno dei fattori stessi. Si noti che *interazione* significa che *l'effetto di un fattore dipende dal livello dell'altro* (e viceversa).
+
+Possiamo visualizzare gli effetti con un *interaction plot*:
+
+```{r}
+with(df, interaction.plot(Temperature, Material, Response, typ="b", col=2:4))
+```
+
+Rimane il dubbio di quali differenze di materiale siano significative alle varie temperature. Possiamo realizzare tre test di Tukey:
+
+```{r}
+for (t in levels(df$Temperature)) {
+  cat(paste("Temperature: ", t, "°C", "\n"))
+  print(TukeyHSD(aov(Response~Material, data=df[df$Temperature==t,]))$Material)
+  cat("\n")
+}
+```
+
+Dalle tabelle si deduce che a 15°C e a 125°C il materiale è ininfluente, mentre a 70°C i materiali 2 e 3 sono indistinguibili.
+
+
+## Verifica di normalità
+
+L'analisi di varianza assume come ipotesi la normalità dei residui. È un'ipotesi abbastanza debole, nel senso che il test statistico su cui si basa ANOVA (un F-test) è robusto a modeste deviazioni dalla normalità. Tuttavia è sempre opportuno *verificare* che i residui siano *normali* e *privi di pattern*.
+
+La *normalità* dei residui può essere verificata sia con metodi grafici che con test di inferenza. I test più comuni sono il test del Chi-quadro e il test di Shapiro-Wilk. Quest'ultimo è il più semplice da effetuare in R:
+
+```{r}
+shapiro.test(residuals(df.lm))
+```
+
+Come si vede si può utilizzare la funzione `residuals()` per estrarre i residui da un modello lineare. In alternativa si può anche scrivere `df.lm$residuals`. Nel nostro caso il *p-value* risulta grande: dato che l'ipotesi nulla del test di Shapiro-Wilk è quella di normalità, concludiamo che i residui nel nostro caso sono normali.
+
+Il metodo grafico più comunemente usato per il controllo di normalità è il diagramma quantile-quantile, visto più sopra. La libreria `car` ne mette a disposizione una versione migliorata che riporta anche l'intervallo di confidenza:
+
+```{r}
+library(car)
+qqPlot(residuals(df.lm))
+```
+
+Come si vede, tutti i punti stanno nella fascia di confidenza, il che conferma l'ipotesi di normalità dei residui.
+
+Oltre alla normalità è importante verificare anche l'*assenza di pattern*: l'andamento dei residui non deve cioè mostrare dipendenze né dalla sequenza operativa (altrimenti significa che le condizioni cambiano durante le prove), né dal valore predetto (altrimenti il modello adottato non è adeguato):
+
+```{r}
+par(mfrow=c(1,2))
+plot(df$RunOrder, residuals(df.lm))
+plot(df.lm$fitted.values, residuals(df.lm))
+```
+Escludendo due soli punti estremi (che sono pochi), non si evidenziano particolari pattern quindi si accetta il modello.
+
+
+## Altri test
+
+### Chi-quadro
+
+Il test del Chi-quadro (distribuzione $\chi^2$) consente di verificare l'ipotesi nulla che non ci sia correlazione tra due variabili categoriche, ad esempio la taglia di vestito e il sesso:
+
+```{r}
+set.seed(123)
+df <- data.frame(
+  sex=sample(factor(c("M", "F"), ordered=F), size=100, replace=T),
+  size=sample(factor(c("S", "M", "L"), ordered=T), size=100, prob=c(20,50,30), replace=T)
+)
+table(df)
+```
+
+```{r}
+chisq.test(df$sex, df$size)
+```
+
+### Kolmogorov-Smirnov
+
+Il test KS consente di verificare l'ipotesi nulla che un dato campione provenga da una determinata popolazione di distribuzione nota (inclusi i parametri):
+
+```{r}
+ks.test(rnorm(1000), "pnorm", 0, 1)
+ks.test(rnorm(1000), "pt", 3)
+ks.test(rnorm(1000), runif(100, -3, 3))
+ks.test(rnorm(100, mean=1), rnorm(100, mean=1.5))
+```
+
+
+
+# Piani fattoriali (DoE)
+
+Per brevità considereremo qui solo i casi di un piano fattoriale completo e di uno frazionato, entrambi non replicati. Casi più semplici (piani non frazionati) possono essere dedotti facilmente da questo caso più completo.
+
+Realizzare e analizzare un esperimento fatoriale richiede i seguenti passi:
+
+1. definizione dei *fattori* e dei loro livelli
+2. scelta del frazionamento e del numero di repliche
+3. generazione della *design matrix*, cioè della lista di combinazioni di livelli
+4. randomizzazione dell'ordine operativo
+5. esecuzione prove e raccolta dati
+6. ANOVA
+7. verifica di adeguatezza del modello (normalità e assenza di pattern nei residui)
+8. eventuale revisione del modello (Box-Cox)
+
+Questi punti saranno esplorati in dettaglio nei punti seguenti per due esempi: piano fattoriale completo e frazionato.
+
+## Caso 1: piano fattoriale completo
+
+### Definizione fattori
+
+Vogliamo studiare la velocità di trivellazione (Y) in funzione di alcuni parametri di processo (A--D):
+
+* A = carico assiale
+* B = portata fango di trivellazione
+* C = velocità di rotazione
+* D = tipo di fango di trivellazione
+* Y = velocità di trivellazione
+
+Di solito la scelta dei fattori è fatta in forma cautelativa: nel dubbio, ogni possibile parametro deve essere considerato come fattore.
+
+### Progettazione piano fattoriale
+
+Decidiamo di effettuare un piano fattoriale $2^4$ non replicato.
+Per ogni fattore individuiamo quindi due livelli, basso e alto, convenzionalmente indicati con `-` e `+`. Ovviamente, il *valore* di tali livelli dipende dal fattore (ad es. 400 N e 600 N per il carico assiale A, 100 rpm e 200 rpm per la velocità di rotazione C, ecc.).
+
+```{r}
+lvl <- c('-', '+')
+```
+
+### Design matrix
+
+La matrice di progetto deve contenere tutte le possibili combinazioni dei due livelli per ogni fattore. Secondo l'ordine standard, i livelli vengono alternati da - a + con frequenza massima per il primo fattore e via via dimezzando la frequenza. In R, questo tipo di data frame può essere agevolmente costruito con il comando `expand.grid()`:
+
+```{r}
+df <- expand.grid(A=lvl, B=lvl, C=lvl, D=lvl, Y=NA)
+knitr::kable(head(df))
+```
+
+### Randomizzazione
+
+È sempre necessario randomizzare la sequenza operativa in modo da distribuire omogeneamente effetti ignoti e incontrollati su tutti i fattori. Possiamo quindi aggiungere due colonne all'inizio del data frame con la sequenza standard e con la sequenza casualizzata:
+
+```{r}
+df <- data.frame(
+  StdOrder=seq_along(df$A),
+  RunOrder=sample(length(df$A)),
+  df
+)
+knitr::kable(head(df))
+```
+Ora il data frame può essere salvato su un file esterno da utilizzare come log per la raccolta dati, dopo averlo ordinato secondo il `RunOrder`:
+
+```{r, warning=FALSE}
+file <- "drill.txt"
+cat(c("# Trivelazione",
+      paste("# File creato il ", date()),
+      "# Fattori:",
+      "#   A = carico assiale, 40-60 N",
+      "#   B = portata fango di trivellazione, 30-50 l/min",
+      "#   C = velocità di rotazione, 100-200 rpm",
+      "#   D = tipo di fango di trivellazione, A-B",
+      "#   Y = velocità di trivellazione, m/min"),
+    file="drill.txt",
+    sep="\n")
+write.table(df[order(df$RunOrder),], "drill.txt", quote=F, append=T)
+```
+
+### Raccolta dati
+
+Il file ``r file`` completo dei dati `Y` viene poi caricato nuovamente in R, riordinando secondo l'ordine standard:
+
+```{r}
+df <- read.table(mydata(file), header=T, stringsAsFactors=T)
+df <- df[order(df$StdOrder),]
+```
+
+### ANOVA
+
+L'analisi comincia creando un modello lineare che comprenda tutti i fattori e tutte le possibili interazioni. Tale modello non può essere analizzato direttamente con ANOVA, dato che non avendo ripetizioni non consente di valutare la varianza:
+
+```{r}
+df.lm <- lm(Y~A*B*C*D, data=df)
+anova(df.lm)
+```
+
+È quindi necessario applicare il metodo di Daniel. La libreria `FrF2` mette a disposizione la funzione `DanielPlot()`:
+
+```{r, warning=FALSE}
+library(FrF2)
+DanielPlot(df.lm, alpha=0.1)
+```
+Dal grafico risulta che solo i fattori B, C e D sono significativi, con una confidenza del 10%. Possiamo quindi riformulare il modello considerando solo questi fattori e le loro interazioni e rimuovendo completamente il fattore A. In questo modo il piano fattoriale $2^4$ non ripetuto diventa un piano fattoriale $2\times 2^3$:
+
+```{r}
+df.lm2 <- lm(sqrt(Y)~B*C*D, data=df)
+anova(df.lm2)
+```
+
+Si confermano come significativo solo i fattori B, C e D e le interazioni tra B e C e tra B e D.
+
+### Verifica di adeguatezza
+
+Verifichiamo l'adeguatezza del modello con QQ-plot dei residui e un'analisi dei pattern:
+
+```{r, warning=FALSE}
+invisible(qqPlot(df.lm2))
+residualPlots(df.lm2)
+```
+
+Come si vede i punti 15 e 16 sono sospetti ma, soprattutto, c'è un'evidente differenza delle distribuzioni dei residui per vari livelli e un pattern in aumento verso i *fitted values*.
+
+### Revisione del modello
+
+È quindi opportuno cercare una trasformazione della resa Y che elimini questi problemi. Le trasformazioni possono essere individuate a mano, tentando varie combinazioni finché si trova quella che fornisce i residui migliori. Un metodo formale più comodo, invece, è il metodo Box-Cox, che individua il parametro di trasformazione $\lambda$ che minimizza gli scarti (o massimizza la cosiddetta *Log-likelihood*):
+
+```{r}
+library(MASS)
+boxcox(Y~B*C*D, data=df)
+```
+Nell'intervallo individuato tra le linee tratteggiate verticali e vicino all'ottimo ricadono sia il valore 0 (che corrisponde al logaritmo), sia il valore -1/2, cioè l'inverso della radice quadrata. Proviamo con quest'ultimo:
+
+```{r}
+df.lm3 <- lm(1/sqrt(Y)~B*C+D, data=df)
+anova(df.lm3)
+residualPlots(df.lm3, test=F)
+```
+
+Proviamo ora con il logaritmo:
+
+```{r}
+df.lm4 <- lm(log(Y)~B*C+D, data=df)
+anova(df.lm4)
+residualPlots(df.lm4, test=F)
+```
+
+Dei due, è forse preferibile l'inverso della radice quadrata, dato che ha distribuzioni dei residui più omogenee.
+
+Si accetta quindi il modello `1/sqrt(Y)~B*C+D`.
+
+## Caso 2: piano fattoriale frazionato
+
+In questo caso vogliamo analizzare la resa di un impianto di fabbricazione di circuiti integrati (fotolitografia) considerando i seguenti fattori:
+
+* A = apertura
+* B = tempo di esposizione
+* C = tempo di sviluppo
+* D = parametro di dimensione delle maschere
+* E = tempo di attacco
+* Y = risposta
+
+Progettiamo un piano fattoriale  $2^{5-1}_{IV}$ non replicato, con la relazione definente $I=ABCDE$. Dovremmo seguire i passi già visti al punto precedente, ma per brevità inseriamo direttamente i risultati nel data frame:
+
+```{r}
+lvl <- c(-1,1)
+df <- expand.grid(A=lvl, B=lvl, C=lvl, D=lvl) # E=ABCD
+attach(df)
+df$E <- A*B*C*D # E=ABCD
+detach(df)
+df$Y <- c(
+  8, 9, 34, 52,
+  16, 22, 45, 60,
+  6, 10, 30, 50,
+  15, 21, 44, 63
+)
+for (k in LETTERS[1:5]) df[k] <- factor(df[[k]])
+```
+
+Dato che il piano non è replicato dobbiamo applicare il metodo di Daniel:
+
+```{r}
+df.lm <- lm(Y~A*B*C*D*E, data=df)
+DanielPlot(df.lm, alpha=0.1)
+```
+
+Il modello ridotto può quindi essere `Y~A*B+C`. Per essere conservativi possiamo comunque usare `Y~A*B*C` e avere comunque abbastanza ridondanza da effettuare una ANOVA:
+
+```{r}
+df.lm <- lm(Y~A*B*C, data=df)
+anova(df.lm)
+```
+
+Si conferma quindi il modello `Y~A*B+C`.
+
+```{r}
+df.lm <- lm(Y~A*B+C, data=df)
+anova(df.lm)
+```
+
+Ora è necessario verificare l'adeguatezza:
+
+```{r}
+invisible(qqPlot(residuals(df.lm)))
+residualPlots(df.lm, test=F)
+```
+
+Non risultano particolari problemi quindi possiamo accettare il modello e studiare il processo con i grafici di interazione:
+
+```{r}
+attach(df)
+interaction.plot(A, B, Y, xlab="Apertura", ylab="Yield", trace.lab="Tempo di esposizione")
+interaction.plot(A, C, Y, xlab="Apertura", ylab="Yield", trace.lab="Tempo di sviluppo")
+interaction.plot(B, C, Y, xlab="Tempo di esposizione", ylab="Resa", trace.lab="Tempo di sviluppo")
+detach(df)
+```
+
