@@ -422,8 +422,8 @@ L'approccio `tidyverse` ha alcune caratteristiche comuni:
 ## Plot
 * I principali comandi di plot sono:
   - `plot`: interfaccia generica
-  - `lines`: plotta una serie come linea, accetta l'opzione `add=T`
-  - `points`: plotta una serie come punti, accetta l'opzione `add=T`
+  - `lines`: plotta una serie come linea, in aggiunta a un `plot`
+  - `points`: plotta una serie come punti, in aggiunta a un `plot`
   - `curve`: plotta una funzione di `x`, accetta l'opzione `add=T`
   - `abline`: plotta una linea retta
   - `hist`: istogramma
@@ -435,7 +435,6 @@ L'approccio `tidyverse` ha alcune caratteristiche comuni:
 * Varianza campionaria: `var(x, na.rm=F)`
 * Deviazione standard: `sd(x, na.rm=F)`
 * Mediana: `median(x, na.rm=F)`
-* Moda: `mode(x, na.rm=F)`
 * Covarianza: `cov(x, y, na.rm=F)`
 * Correlazione: `cor(x, y, na.rm=F)` $~=:\rm{cov}(x, y)/(\sigma_x\sigma_y)$
 
