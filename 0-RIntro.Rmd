@@ -146,7 +146,8 @@ v3 <- seq(1, 10, 0.5)
 # Il linguaggio R
 ## Introspezione
 * Funzioni utili per ispezionare gli oggetti:
-  * `class()`: classe (alto livello) 
+  * `mode()`: *storage mode*
+  * `class()`: classe (alto livello, uguale a `mode()` per tipi base)
   * `typeof()`: tipo (basso livello)
   * `length()`: lunghezza vettore
   * `attributes()`: metadati

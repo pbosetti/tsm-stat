@@ -317,9 +317,11 @@ theme_set(theme_bw())
 Un GGPlot viene creato inizialmente con la funzione `ggplot()` che richiede la struttura dati (`tibble` o `dataframe`) e gli *aesthetics*, cioè un comando che specifica *cosa* deve essere visualizzato nel grafico (funzione `aes()`). Quest'unico comando tuttavia produce esclusivamente un grafico vuoto: per riempirlo è necessario aggiungere dei *layer*, **sommando** al `ggplot` opportuni comandi:
 
 ```{r}
-ggplot(a, aes(In, Out)) + 
+library(ggrepel)
+ggplot(a, aes(x=In, y=Out, label=glue("({In},{y})", y=round(Out,2)))) + 
   geom_smooth(formula = y~poly(x,2), method="lm") +
   geom_point(aes(size=Size), color="blue") +
+  geom_label_repel(alpha=3/4, nudge_x=0, nudge_y=10, size=2) + 
   labs(title="Grafico di esempio", subtitle = "con GGPlot2") + 
   xlab("Input") +
   ylab("Output") +
