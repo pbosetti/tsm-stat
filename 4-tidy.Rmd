@@ -463,19 +463,68 @@ df %>% ggplot(aes(x=x, y=f)) +
   geom_vline(xintercept=c(-3, 0, 3), linetype=2) +
   labs("Standard normal density function", y="f(x)")
 ```
+
 ### Istogrammi e QQ-plot
+
+Ottenere istogrammi simili a quelli prodotti dalla funzione `hist()` non è immediato, a causa di alcune differenze nei default. In particolare, `geom_histogram()`:
+
+* assume sempre un default di 30 bins, mentre `hist()` li calcola automaticamente con la formula di Sturges, $k=\left\lceil{\log_2(n)}\right\rceil + 1$, fornita da `nclass.Sturges()`;
+* ciascuna barra è centrata sul suo intervallo, mentre in `hist()` va da estremo sinistro a estremo destro
 
 ```{r}
 set.seed(123)
-(data <- tibble(
-  x=rnorm(100)
-)) %>%
-ggplot(aes(x=x)) + 
-  geom_histogram(aes(y=..density..), fill="steelblue", color="black") +
-  geom_density(fill="red", alpha=0.2)
+df <- (data <- tibble(
+  x=1:100,
+  norm=rnorm(length(x)),
+  t=rt(length(x), 3)
+))
+df %>% ggplot(aes(x=norm)) + 
+  geom_histogram(aes(y=..density..), 
+                 fill="gray", 
+                 color="black",
+                 binwidth=1,
+                 boundary=0
+                 ) +
+  geom_label(aes(y=..density.., label=..count..), 
+            stat="bin", 
+            binwidth=1,
+            boundary=0) +
+  geom_label(aes(x=-3.5, y=0.4, label="Conteggio")) +
+  geom_density(fill="red", alpha=0.2) + 
+  geom_function(fun=dnorm, 
+                args=list(
+                  mean=mean(df$norm), 
+                  sd=sd(df$norm)), 
+                color="red",
+                xlim=c(-4,4)) + 
+  scale_x_continuous(breaks=-4:4) + 
+  labs(x="Valore", y="Densità", title="Istogramma di un campione normale")
+
+
+df %>% 
+  pivot_longer(c("norm", "t"), names_to = "type", values_to = "value") %>%
+  ggplot(aes(x=value)) + 
+  geom_histogram(aes(y=..density.., fill=type), 
+                 color="black",
+                 binwidth=1,
+                 boundary=0,
+                 position="dodge"
+                 ) +
+  geom_function(fun=dnorm, 
+                args=list(
+                  mean=mean(df$norm), 
+                  sd=sd(df$norm)
+                ),
+                color="red",
+                xlim=c(-4,4)) + 
+  scale_x_continuous(breaks=-4:4) + 
+  coord_cartesian(xlim=c(-4,4)) +
+  labs(x="Valore", y="Densità", 
+       fill="Distribuzione", 
+       title="Confronto Normale / T di student")
 ```
 
-**Nota**: in `aes()` la notazione `..density..` sta a indicare "applica la *statistica* `density` ai dati in ingresso". Le statistiche disponibili sono elencate nella sezione *Computed variables* dell'help delle funzioni `stat_`.
+**Nota**: in `aes()` la notazione `..density..` sta a indicare "applica la *statistica* `density` ai dati in ingresso". Le statistiche disponibili sono elencate nella sezione *Computed variables* dell'help delle funzioni `geom_*`.
 
 A volte si desidera una raffigurazione comparativa:
 
@@ -652,7 +701,9 @@ if (!file.exists(datafile) | difftime(now(),  file.mtime(datafile), units="hours
 }
 covid <- read_csv(datafile) %>% 
   filter(location=="Italy") %>% 
-  select(c("date", "new_cases", "new_deaths", "new_tests", "people_vaccinated_per_hundred", "positive_rate", "icu_patients")) 
+  select(c("date", "new_cases", "new_deaths", 
+           "new_tests", "people_vaccinated_per_hundred", 
+           "positive_rate", "icu_patients")) 
 cts <- xts(select(covid, new_cases:icu_patients), order.by = covid$date)
 ```
 
@@ -689,7 +740,8 @@ cbind(
   apply.weekly(cts$positive_rate, max)
 ) %>% 
   ggplot() +
-  geom_point(aes(x=Index, y=new_tests, size=positive_rate), pch=21, color="black", fill=gray(0.75)) +
+  geom_point(aes(x=Index, y=new_tests, size=positive_rate), 
+             pch=21, color="black", fill=gray(0.75)) +
   geom_line(aes(x=Index, y=new_tests, color=positive_rate)) +
   scale_color_viridis_c() +
   scale_x_date(date_breaks = "1 month", labels=label_date("%y.%b")) + 
