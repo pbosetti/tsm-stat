@@ -234,13 +234,19 @@ lag.plot(rnorm(length(cpmx)), lags=9)
 
 La libreria `forecast` mette a disposizione il metodo più semplice per effettuare la regressione di una serie temporale mediante ARIMA (*Auto-Regressive Integrative Moving Average*). Mettiamolo alla prova sulla serie temporale COVID-19, addestrando il modello fino alla data `r paste0("2021.7 = ", date_decimal(2021.7))`, utilizzando il modello per predire i successivi 30 giorni, e poi confrontandolo con i dati reali.
 
+È importante ricordare che un modello ARIMA si applica a serie temporali che devono essere **stazionarie** (cioè a media più o meno costante) e **a varianza costante**. Se le oscillazioni della serie storica non sono costanti si può applicare una trasformazione: tipicamente si prova con il logaritmo, ma altre possibilità sono l'inversa, la radice, o una potenza. In generale, si parla di *trasformazioni Box-Cox* utilizzando il parametro $\lambda$: se esso è uguale a zero, la trasformazione è il logaritmo, altrimenti è l'elevazione alla potenza $\lambda$ (ad es. $\lambda=-0.5$ corrisponde all'inverso della radice, ecc.)
+
+Se la serie non ha una media stazionaria si può effettuare una **differenziazione** (cioè derivata), un numero di volte sufficiente. L'ordine di differenziazione è il parametro $d$ del modello ARIMA.
+
+La funzione `auto.arima()` individua automaticamente i coefficienti $p, d, q$ e, se si specifica il parametro `lambda="auto"`, anche il $\lambda$ più appropriato per rendere stazionaria anche la varianza.
+
 Si noti che le funzioni `auto.arima()` e `forecast()` perdono l'asse dei tempi quando vengono utilizzate su oggetti `xts`, quindi usiamo `xts` per selezionare i peridi (più comodo) ma convertiamo in oggetti `ts` per l'analisi:
 
 ```{r}
 d0 <- "/2021-08-20"
 d1 <- "2021-08-21/"
 win <- ts_ts(cpmx[d0])
-(fit2 <- auto.arima(win))
+(fit2 <- auto.arima(win, lambda="auto"))
 plot(forecast(fit2, 30, level=c(80, 95, 99)),
      xlim=c(-120,+30)/365+decimal_date(ymd(d0))
      )
@@ -252,12 +258,15 @@ Vediamo le predizioni odierne:
 
 ```{r}
 win <- last(cpmx, "16 weeks")
-(fit <- auto.arima(ts_ts(win)))
-plot(forecast(fit, 30, level=c(80, 95, 99)),
-     xlim=c(-60,+30)/365+decimal_date(end(cpmx))
+(fit <- auto.arima(ts_ts(win), lambda=0))
+plot(forecast(fit, 30),
+     xlim=c(-60,+30)/365+decimal_date(end(cpmx)),
+     ylim=c(0, 10000)
 )
 abline(v=decimal_date(end(cpmx)))
 ```
+
+Si noti che si è forzata una trasformazione con $\lambda=0$, cioè il logaritmo, dato che la varianza della finestra considerata è evidentemente non costante, anche se `auto.arima(..., lambda="auto")` individuerebbe un $\lambda=1$ (nessuna trasformazione). A volte gli automatismi non funzionano!
 
 In realtà, le oscillazioni settimanali sono più un artefatto di misura che una proprietà intrinseca del fenomeno, quindi è più corretto effettuare predizioni su, ad esempio, i valori settimanali. Quindi utilizziamo lo stesso oggetto `cpmm` sopra ottenuto sommando i valori settimanali, e ci concentriamo sulla finestra `2021.4` -- `2021.911`. Inoltre, come vedremo più avanti, il metodo ARIMA si applica a serie *stazionarie*, in cui cioè valore medio e varianza sono stabili. Il metodo più comune per stabilizzare la varianza è *trasformare* i dati applicando il logaritmo:
 
@@ -266,7 +275,7 @@ cpmm <- apply.weekly(ts_xts(cpm), sum)
 win <- ts_ts(cpmm["2021-05-27/2021-11-29"])
 # Fino all'ultima domenica
 #win <- ts_ts(cpmm[1:(last(endpoints(cpmm, on="weeks")-1))]["2021-6/"])
-fit <- auto.arima(log(win))
+fit <- auto.arima(win, lambda="auto")
 plot(forecast(fit, h=5))
 ```
 
@@ -275,7 +284,7 @@ plot(forecast(fit, h=5))
 ### Parametri del modello
 Per calibrare un modello ARIMA è necessario identificare i parametri $p$, $d$ e $q$. 
 
-Anzitutto, un modello ARMA ($d=0$) si può applicare solo ad una serie temporale *stazionaria*, cioè priva di deriva e a varianza costante. Se la serie in questione non ha queste caratteristiche, è possibile applicare delle trasformazioni: ad esempio, possiamo applicare il logaritmo per comprimere la varianza, e differenziare una o più volte per rimuovere la deriva. Il numero di differenziazioni corrisponde al parametro $d$ che trasforma un modello $\mathrm{ARMA}(p,q)$ in $\mathrm{ARIMA}(p,d,q)$.
+Anzitutto, come deto sopra un modello ARMA ($d=0$) si può applicare solo ad una serie temporale *stazionaria*, cioè priva di deriva e a varianza costante. Se la serie in questione non ha queste caratteristiche, è possibile applicare delle trasformazioni: ad esempio, possiamo applicare il logaritmo per comprimere la varianza, e differenziare una o più volte per rimuovere la deriva. Il numero di differenziazioni corrisponde al parametro $d$ che trasforma un modello $\mathrm{ARMA}(p,q)$ in $\mathrm{ARIMA}(p,d,q)$.
 
 Il passo successivo è individuare il grado dei processi AR e MA. Per quanto riguarda un processo MA, il suo grado $q$ è il numero di elementi consecutivi interessati alla media mobile: 
 $$
@@ -347,7 +356,7 @@ La trasformazione migliore è quella che minimizza il coefficiente di varianza d
 (lambda <- BoxCox.lambda(temp.global + 273.15))
 ```
 
-Si noti che si sono trasformati i dati in gradi Kelvin, dato che il metodo richiede serie di dati strettamente positivi (coinvolge il logaritmo). Il valore di $\lambda$ ottenuto è molto vicino a 1, per cui si ritiene che non sia necessaria alcuna trasformazione.
+Si noti che si sono trasformati i dati in gradi Kelvin, dato che il metodo richiede serie di dati strettamente positivi (potrebbe coinvolgere il logaritmo). Il valore di $\lambda$ ottenuto è molto vicino a 1, per cui si ritiene che non sia necessaria alcuna trasformazione.
 
 ```{r}
 # se lambda fosse diversa da 1, si procederebbe così:
@@ -380,9 +389,9 @@ La `pacf` mostra 3 picchi prima del drop-off, quindi $p=3$. Analogamente, anche 
 Possiamo effettuare la regressione ARIMA con i parametri $(3, 1, 2)$. Utilizziamo la funzione `Arima` della libreria `forecast` anziché la versione standard `arima`, dato che la prima consente anche di considerare il trend (o drift). Per confronto, verifichiamo anche il modello ottenuto con `auto.arima`:
 
 ```{r}
-fit <- Arima(temp.global, order=c(3, 1, 2), include.drift = T)
+fit <- Arima(temp.global, order=c(3, 1, 2), include.drift = T, lambda="auto")
 summary(fit)
-fit.auto <- auto.arima(temp.global)
+fit.auto <- auto.arima(temp.global, lambda="auto")
 summary(fit.auto)
 ```
 
@@ -478,8 +487,12 @@ plot(forecast(fit1, h=12))
 plot(forecast(fit2, h=12))
 ```
 
+Si noti che i grafici sopra riportano la regressione di `lx`, che è `log(x)`, quindi la scala delle ordinate andrebbe opportunamente anti-trasformata. Purtroppo gli oggetti `fit1` e `fit2` non sono immediatamente trasformabili: sarebbe necessario scomporli nei dati originali e poi applicare l'esponenziale `exp()`. Per questo motivo **è sempre preferibile applicare le trasformazioni con il parametro `lambda` della funzione `arima()`**, dato che è trasparentemente gestito nei plot. In questo esempio si è preferito trasformare manualmente la serie storica in modo da rendere più chiara la logica del processo.
+
+Affidandoci agli automatismi, possiamo ridurre quanto sopra a:
+
 ```{r}
-(fit3 <- auto.arima(lx))
+(fit3 <- auto.arima(x, lambda="auto"))
 plot(forecast(fit3, h=12))
 ```
 

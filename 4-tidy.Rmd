@@ -611,6 +611,8 @@ ggplot(df.train) +
 
 ## Serie temporali
 
+GGPlot2 coesiste abbastanza bene con gli oggetti `xts`: le funzioni della libreria convertono in `tibble` ogni oggetto `xts` chiamando automaticamente la funzione `fortify()`. Vediamo un esempio.
+
 ```{r}
 data <- read.csv(mydata("temperature-anomaly.csv"))
 data <- data[data$Entity=="Global",]
@@ -618,6 +620,8 @@ t.global <- xts(data$Median.temp,
                 order.by=as.Date(as.character(data$Year), format="%Y"),
                 frequency = 1)
 ```
+
+Realizziamo un grafico separando visvamente le anomalie negative da quelle positive, e indicando in maniera differente i valori successivi al primo Gennaio 2000:
 
 ```{r}
 x1 <- t.global["/1999-12-31"]
@@ -643,17 +647,19 @@ Si noti che gli oggetti `xts` vengono automaticamente convertiti in `data.frame`
 ```{r}
 x2 %>% fortify %>% str
 ```
+
 Per questo motivo, si usa l'estetica `aes(x=Index, y=x2)`
 
+Ricreiamo ora lo stesso grafico di predizione dei passeggeri delle compagnie aeree visto in Parte 3:
 
 ```{r}
-passl <- AirPassengers %>% log %>% ts_xts
+passl <- AirPassengers %>%  ts_xts
 
 gp <- passl %>%
   ggplot(aes(x=Index, y=value)) + 
   geom_line()
 
-(fit <- auto.arima(ts_ts(passl)))
+(fit <- auto.arima(ts_ts(passl), lambda="auto"))
 pred <- forecast(fit, h=12)
 
 gp + 
@@ -671,6 +677,7 @@ gp +
   labs(title="Air Passengers", x="Data", y="Numero passeggeri (/1000)") + 
   scale_x_date(breaks="1 year", date_labels="%Y")
 ```
+
 In conclusione, è opportuno ricordarsi quanto segue:
 
 * le funzioni ARIMA supportano gli oggetti `ts`, *e non* gli oggetti `xts`: se si passa un `xts` a `arima()` esso viene convertito in un `data.frame`, perdendo l'informazione temporale. È quindi **sempre opportuno convertire un `xts` mediante la funzione `tsbox::ts_ts()`**;
@@ -689,7 +696,7 @@ Ovviamente quanto sopra è già fornito mediante un'unica funzione, `forecast::a
 
 ```{r}
 autoplot(pred) + 
-  labs(x="Tempo", y="Passeggeri (/1000)")
+  labs(x="Tempo", y="Passeggeri")
 ```
 
 Riprendiamo ora i dati COVID-19 per illustrare alcuni dettagli dell'uso di oggetti `xts` con ggplot:
