@@ -82,7 +82,7 @@ Le librerie che fanno parte di Tidyverse possono essere caricate individualmente
 
 ## Strutture dati
 
-Le librerie Tidyverse si aspettano i dati in formato *tidy*, cioè un'osservazione per riga, un osservando per colonna. I dati sono tipicamente contenuti in data frame o, preferibilmente, nella nuova classe `tibble`, che è per lo più interscambiabile con i data frame, dato che ne eredita la classe. Una `tibble` può essere creata convertendo un data frame, oppure passando i dati per colonne (come per la funzione `data.frame()`), oppure ancora passando i dati **per righe**, mediante la funzione `tribble()` (notare la `r`, per *rows*):
+Le librerie Tidyverse si aspettano i dati in formato *tidy*, cioè un'osservazione per riga, un osservando per colonna. I dati sono tipicamente contenuti in data frame o, preferibilmente, nella nuova classe `tibble`, che è per lo più interscambiabile con i data frame, dato che ne eredita la classe. Una `tibble` può essere creata convertendo un data frame, oppure passando i dati per colonne (come per la funzione `data.frame()`), oppure ancora passando i dati **per righe**, mediante la funzione `tribble()` (notare la `r`, per *rows*, oppure come `TRansposed tIBBLE`):
 
 ```{r}
 n <- 10
@@ -633,7 +633,9 @@ x2 <- t.global["2000-1-1/"]
 p1 + geom_line(data=x2, aes(Index, x2), color="red") +
   #scale_x_continuous(breaks=seq(start(x1), end(x2), by="20 years")) +
   scale_x_date(breaks="10 years", date_labels="%Y") +
-  scale_y_continuous(breaks=seq(round(min(t.global), 0.1), round(max(t.global), 0.1), by=0.1))
+  scale_y_continuous(
+    breaks=seq(round(min(t.global), 0.1), round(max(t.global), 0.1), by=0.1)
+  )
 ```
 
 Si noti che gli oggetti `xts` vengono automaticamente convertiti in `data.frame` invocando automaticamente la funzione `fortify()`. Quest'ultima crea la colonna dei tempi con il nome `Index`:
@@ -762,7 +764,7 @@ ctsm %>%
   labs(x="Nuovi casi", y="Positivi (%)", color="Nuovi test")
 ```
 
-In questo caso particolare possiamo notare una clusterizzazione dei dati. Proviamo ad approfondire per capirne il motivo. Useremo la funzione base `cut` per assegnare un indice di classe in corrispondenza di un dato intervallo sul numero di test effettuati al giorno. Si noti inoltre che se vogliamo usare verbi `dplyr` su un ` xts` dobbiamo prima convertirlo in data frame mediante `fortify`: mentre infatti questo passaggio è implicito in `ggplot`, non lo è nelle funzioni ` dplyr`.
+In questo caso particolare possiamo notare una clusterizzazione dei dati. Proviamo ad approfondire per capirne il motivo. Useremo la funzione base `cut` per assegnare un indice di classe in corrispondenza di un dato intervallo sul numero di test effettuati al giorno. Si noti inoltre che se vogliamo usare verbi `dplyr` su un `xts` dobbiamo prima convertirlo in data frame mediante `fortify`: mentre infatti questo passaggio è implicito in `ggplot`, non lo è nelle funzioni `dplyr`.
 
 ```{r}
 ctsm$cat <- cut(ctsm$new_tests, 
