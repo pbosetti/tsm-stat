@@ -537,29 +537,37 @@ ggplot(data=diamonds) +
                fun.max=max,
                fun=median)
 ```
-Infine, la distribuzione può essere analizzata mediante i diagrammi quantile-quantile:
+Infine, la distribuzione può essere analizzata mediante i diagrammi quantile-quantile. La libreria `qqplotr` mette a disposizione la funzione `geom_qq_band()` per aggiungere anche la banda di confidenza. Si noti che per default tale funzione calcola la banda assumendo una distribuzione a valore atteso uguale alla media del campione, mentre `geom_qq()` assume media nulla: è quindi necessario specificare anche l'opzione `dparams=list(mean=0)`:
 
 ```{r}
+library(qqplotr)
 set.seed(123)
 tibble(
   x=rnorm(100, mean=20)
 ) %>%
 ggplot(aes(sample=x)) + 
+  stat_qq_band(dparams=list(mean=0)) +
   geom_qq() +
   geom_qq_line(color="red") + 
   xlab("Quantili teorici") +
   ylab("Quantili del campione")
 ```
+
 ### Boxplot
 
-```{r}
+I boxplot sono grafici molto utili per comparare visivamente la distribuzione di due o più parametri. In questo caso vediamo anche l'aggiunta degli *intagli* (o *notch*), che servono a verificare rapidamente la significatività della differenza: se i *notch* non sono sovrapposti possiamo rigettare l'ipotesi nulla di uguaglianza delle medie:
+
+```{r warning=FALSE}
 df <- read_table(mydata("twosample.dat"), col_types=cols(
   treat=col_factor(),
   yield=col_double()))
 df %>% ggplot(aes(x=treat, y=yield)) +
-  geom_boxplot(fill="steelblue")
+  geom_boxplot(fill="steelblue", notch=T)
 ```
+
 ### Istogrammi marginali
+
+In caso di dati bivariati sono utili i cosiddetti *istogrammi marginali*, ovvero istogrammi sui lati di un grafico a dispersione corripondenti alla distribuzione dei punti proiettati sugli assi:
 
 ```{r}
 df <- tibble(mtcars)
@@ -568,6 +576,24 @@ gp <- df %>% ggplot(aes(x=wt, y=mpg, color=cyl, size=cyl)) +
   theme(legend.position="bottom")
 
 gp %>% ggMarginal(type="histogram", fill="lightgray")
+```
+
+### Diagramma di Pareto
+
+```{r}
+set.seed((123))
+tibble(
+  Categoria=LETTERS[1:10], 
+  Conteggio=sort(exp(rnorm(10, 5, 1.5)), decreasing=T), 
+  Parziali=cumsum(Conteggio)
+) %>%
+  ggplot(aes(x=Categoria)) + 
+  geom_bar(aes(y=Conteggio, fill=Parziali), stat="identity") + 
+  geom_point(aes(y=Parziali)) + 
+  geom_line(aes(y=Parziali, group=1)) + 
+  geom_label_repel(aes(y=Parziali, label=paste0(round(Parziali/sum(Conteggio)*100), "%")),
+                   nudge_x=-0.5, nudge_y=250, size=3) + 
+  scale_fill_viridis_b()
 ```
 
 ## Modelli
@@ -606,8 +632,6 @@ ggplot(df.train) +
   geom_line(aes(x=x, y=pred), col="red") + 
   geom_linerange(aes(x=x, ymin=y, ymax=y-resid), color=gray(2/3))
 ```
-
-
 
 ## Serie temporali
 
@@ -724,7 +748,7 @@ Una delle utili funzionalità di `xts` è quella di semplificare l'applicazione 
 p1 <- apply.weekly(cts$new_cases, sum) %>% ggplot(aes(x=Index, y=new_cases)) +
   geom_line() +
   labs(x="", y="Nuovi casi/sett.") +
-  scale_x_date(date_breaks = "1 month", labels=label_date("%y.%b")) + 
+  scale_x_date(date_breaks = "1 month", labels=label_date("%b'%y")) + 
   theme(axis.text.x = element_text(angle = 30, hjust = 1))
 p2 <- cbind(
     apply.weekly(cts$new_deaths, sum),
@@ -733,7 +757,7 @@ p2 <- cbind(
   geom_line(aes(x=Index, y=new_deaths, color="Decessi")) +
   geom_line(aes(x=Index, y=icu_patients, color="T. intensiva")) +
   labs(x="Data", y="Dati settimanali") +
-  scale_x_date(date_breaks = "1 month", labels=label_date("%y.%b")) + 
+  scale_x_date(date_breaks = "1 month", labels=label_date("%b'%y")) + 
   scale_color_manual(name="Metrica", values=c(2,3)) +
   theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
   theme(legend.position="bottom") 
@@ -755,7 +779,7 @@ cbind(
              pch=21, color="black", fill=gray(0.75)) +
   geom_line(aes(x=Index, y=new_tests, color=positive_rate)) +
   scale_color_viridis_c() +
-  scale_x_date(date_breaks = "1 month", labels=label_date("%y.%b")) + 
+  scale_x_date(date_breaks = "1 month", labels=label_date("%b'%y")) + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   labs(x="Data", y="Nuovi test/sett.", size="Positivi", color="Positivi")
 ```
@@ -796,7 +820,7 @@ ctsm %>% fortify() %>%
   ggplot(aes(x=Index, y=new_cases, color=factor(cat))) +
   geom_point(alpha=0.5) +
   scale_color_manual(values = c(2:6)) +
-  scale_x_date(date_breaks = "1 month", labels=label_date("%y.%b")) + 
+  scale_x_date(date_breaks = "1 month", labels=label_date("%b'%y")) + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   labs(x="Data", y="Nuovi casi", color="Classe") 
 ```
