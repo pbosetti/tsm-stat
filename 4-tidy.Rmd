@@ -725,9 +725,9 @@ autoplot(pred) +
 
 Riprendiamo ora i dati COVID-19 per illustrare alcuni dettagli dell'uso di oggetti `xts` con ggplot:
 
-```{r}
+```{r warning=FALSE}
 library(lubridate)
-library(scales)
+# library(scales)
 url <- "https://covid.ourworldindata.org/data/owid-covid-data.csv"
 datafile <- basename(url)
 if (!file.exists(datafile) | difftime(now(),  file.mtime(datafile), units="hours") > 24 ) {
@@ -748,7 +748,7 @@ Una delle utili funzionalità di `xts` è quella di semplificare l'applicazione 
 p1 <- apply.weekly(cts$new_cases, sum) %>% ggplot(aes(x=Index, y=new_cases)) +
   geom_line() +
   labs(x="", y="Nuovi casi/sett.") +
-  scale_x_date(date_breaks = "1 month", labels=label_date("%b'%y")) + 
+  scale_x_date(date_breaks = "1 month", labels=scales::label_date("%b'%y")) + 
   theme(axis.text.x = element_text(angle = 30, hjust = 1))
 p2 <- cbind(
     apply.weekly(cts$new_deaths, sum),
@@ -757,12 +757,13 @@ p2 <- cbind(
   geom_line(aes(x=Index, y=new_deaths, color="Decessi")) +
   geom_line(aes(x=Index, y=icu_patients, color="T. intensiva")) +
   labs(x="Data", y="Dati settimanali") +
-  scale_x_date(date_breaks = "1 month", labels=label_date("%b'%y")) + 
+  scale_x_date(date_breaks = "1 month", labels=scales::label_date("%b'%y")) + 
   scale_color_manual(name="Metrica", values=c(2,3)) +
   theme(axis.text.x = element_text(angle = 30, hjust = 1)) +
   theme(legend.position="bottom") 
 plot_grid(p1, p2, align="v", nrow=2) 
 ```
+**NOTA**: Per formattare le etichette dell'asse delle ascisse come date è necessario usare la funzione `label_date()` della libreria `scales`. Tuttavia, purtroppo questa libreria è in conflitto con la libreria `readr` (sopra caricata), in quanto entrambe definiscono una funzione `col_factor()`. In questi casi, anziché caricare la libreria con il comando `library()` si può accedere alla singola funzione con la notazione `scales::label_date()`.
 
 Come si vede, si può usare `cbind` per ricostruire un `xts` dopo aver applicato le funzioni di somma settimanale alle colonne di interesse.
 
@@ -779,7 +780,7 @@ cbind(
              pch=21, color="black", fill=gray(0.75)) +
   geom_line(aes(x=Index, y=new_tests, color=positive_rate)) +
   scale_color_viridis_c() +
-  scale_x_date(date_breaks = "1 month", labels=label_date("%b'%y")) + 
+  scale_x_date(date_breaks = "1 month", labels=scales::label_date("%b'%y")) + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   labs(x="Data", y="Nuovi test/sett.", size="Positivi", color="Positivi")
 ```
@@ -820,7 +821,7 @@ ctsm %>% fortify() %>%
   ggplot(aes(x=Index, y=new_cases, color=factor(cat))) +
   geom_point(alpha=0.5) +
   scale_color_manual(values = c(2:6)) +
-  scale_x_date(date_breaks = "1 month", labels=label_date("%b'%y")) + 
+  scale_x_date(date_breaks = "1 month", labels=scales::label_date("%b'%y")) + 
   theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
   labs(x="Data", y="Nuovi casi", color="Classe") 
 ```
