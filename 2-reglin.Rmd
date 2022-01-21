@@ -186,7 +186,7 @@ L'idea è che i regressori per cui la funzione logistica vale meno di 0.5 appart
 
 ## Esempio
 
-Vogliamo prevedere la sopravvivenza di una bottiglia di sapone liquido al test di caduta, in funzione del livello di riempimento. Più la bottiglia è piena, infatti, più piccolo è il polmone di aria che contiene e, quindi, maggiore la sobrapressione in caso di caduta. Ovviamente il problema è stocastico, dato che le bottiglie non sono tutte uguali e il riempimento stesso ha una certa variabilità.
+Vogliamo prevedere la sopravvivenza di una bottiglia di sapone liquido al test di caduta, in funzione del livello di riempimento. Più la bottiglia è piena, infatti, più piccolo è il polmone di aria che contiene e, quindi, maggiore la sovrapressione in caso di caduta. Ovviamente il problema è stocastico, dato che le bottiglie non sono tutte uguali e il riempimento stesso ha una certa variabilità.
 
 Abbiamo un data frame che contiene i risultati di 400 diversi test di caduta per bottiglie riempite a differenti livelli rispetto alla capacità nominale. Cominciamo caricando e visualizzando i dati con un istogramma del livello di riempimento:
 

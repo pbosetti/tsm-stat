@@ -186,7 +186,11 @@ Infine, la funzione `endpoints()` consente di identificare gli indici della seri
 Ad esempio, per selezionare i dati fino all'ultima domenica:
 
 ```{r}
-plot(cpmx[1:(last(endpoints(cpmx, on="weeks")-1))]["2021-11/"])
+invisible( # necessario, addPanel crea un nuovo grafico
+  plot(cpmx[1:(last(endpoints(cpmx, on="weeks")-1))]["2021-11/"],
+     main="cpmx")
+)
+addPanel(rollmedian, k=7, on=1, col="red")
 ```
 
 Ci sono anche utili funzioni per convertire il periodo in un periodo più lungo: ad esempio, da una serie giornaliera ad una serie settimanale mediante `to_weekly()`. Questi comandi restituiscono quattro serie "OHLC": *Opening, High, Low, Closing*, cioè il primo valore del sotto-periodo, il massimo, il minimo e l'ultimo valore:
@@ -353,15 +357,16 @@ Un modello ARIMA deve essere applicato ad una serie **stazionaria**: la serie ci
 La trasformazione migliore è quella che minimizza il coefficiente di varianza della serie. Il metodo Box-Cox è comunemente adottato per individuare il parametro di trasformazione $\lambda$ che minimizza il coefficiente di variazione:
 
 ```{r}
-(lambda <- BoxCox.lambda(temp.global + 273.15))
+(lambda <- BoxCox.lambda(temp.global))
 ```
 
-Si noti che si sono trasformati i dati in gradi Kelvin, dato che il metodo richiede serie di dati strettamente positivi (potrebbe coinvolgere il logaritmo). Il valore di $\lambda$ ottenuto è molto vicino a 1, per cui si ritiene che non sia necessaria alcuna trasformazione.
+Il valore di $\lambda$ ottenuto è vicino a 1, per cui si ritiene che non sia necessaria alcuna trasformazione.
+
+Se $\lambda$ fosse molto diversa da 1, si procederebbe così:
 
 ```{r}
-# se lambda fosse diversa da 1, si procederebbe così:
 temp.global.BC <- BoxCox(temp.global + 273.15, lambda)
-# ma non è necessario...
+# utilizzando di seguito la trasformata temp.global.BC
 ```
 
 Il prossimo passo è eliminare il trend mediante differenziazione. Il comando `ndiffs()` restituisce l'opportuno ordine di differenziazione per stabilizzare la serie, dopodiché il comando `diff(ts, differences=n)` applica la differenziazione di ordine `n`:
@@ -386,16 +391,16 @@ tsdisplay(temp.global.diff)
 
 La `pacf` mostra 3 picchi prima del drop-off, quindi $p=3$. Analogamente, anche la `acf` mostra due picchi prima del drop-off, quindi $q=2$
 
-Possiamo effettuare la regressione ARIMA con i parametri $(3, 1, 2)$. Utilizziamo la funzione `Arima` della libreria `forecast` anziché la versione standard `arima`, dato che la prima consente anche di considerare il trend (o drift). Per confronto, verifichiamo anche il modello ottenuto con `auto.arima`:
+Possiamo effettuare la regressione ARIMA con i parametri $(3, 1, 2)$. Utilizziamo la funzione `Arima` della libreria `forecast` anziché la versione standard `arima`, dato che la prima consente anche di considerare il trend (o drift) e di specificare il parametro $\lambda$ della trasformazione. Per confronto, verifichiamo anche il modello ottenuto con `auto.arima`, laciando anche stimare il valore appropriato di $\lambda$ con `lambda="auto"`:
 
 ```{r}
-fit <- Arima(temp.global, order=c(3, 1, 2), include.drift = T, lambda="auto")
+fit <- Arima(temp.global, order=c(3, 1, 2), include.drift = T, lambda=1)
 summary(fit)
 fit.auto <- auto.arima(temp.global, lambda="auto")
 summary(fit.auto)
 ```
 
-Come si osserva, la versione automatica propone un modello $\mathrm{ARIMA}(2,1,2)$, che ha un parametro AIC leggermente inferiore.
+Come si osserva, la versione automatica propone lo stesso modello $\mathrm{ARIMA}(3,1,2)$.
 
 Il prossimo passo è verificare i residui: perché il modello sia adeguato, essi devo essere casuali e normali. La casualità può essere studiata con la `acf`: se la serie temporale è casuale, l'unico indice di correlazione deve essere il primo.
 
@@ -415,13 +420,13 @@ Entrambi i modelli risultano quindi adeguati.
 Possiamo infine verificare la predizione, confrontandola con i dati successivi al 2000, per entrambi i modelli:
 
 ```{r}
-plot(forecast(fit, h=16))
+plot(forecast(fit, h=16), ylim=c(-0.6, 0.8))
 lines(temp.global.test, col="red")
 lines(fit$fitted, col="gray")
 
-plot(forecast(fit.auto, h=16))
+plot(forecast(fit.auto, h=16), ylim=c(-0.6, 0.8))
 lines(temp.global.test, col="red")
-lines(fit$fitted, col="gray")
+lines(fit.auto$fitted, col="gray")
 
 ## ggplot:
 # autoplot(forecast(fit, h=16)) + geom_line(aes(x=index(fit$x), y=fit$fitted), color="gray") + geom_line(aes(x=index(temp.global.test), y=temp.global.test), color="red") + ylab("Anomalia termica (°C)") + xlab("Anno")
@@ -470,7 +475,7 @@ Per quanto riguarda i parametri $p$ e $q$, entrambi i diagrammi di autocorrelazi
 Dopo il picco a lag 12, invece, la PACF mostra una decrescita geometrica, il che indica il termine $p=0$ (modello AR), mentre la ACF mostra un rapido smorzamento subito dopo il primo picco, che indica $q=1$ nel modello MA. Secondo la notazione comune, il modello appropriato è quindi $\mathrm{ARIMA}(1,1,1)\times(0,1,1)_{12}$, ovvero un modello stagionale con lag 12 con parametri $(1,1,1)$ per la parte non-stagionale, e $(0,1,1)$ per la parte stagionale.
 
 ```{r}
-(fit1 <- arima(lx, order=c(1,1,1), seasonal=list(order=c(1,1,1), period = 12)))
+(fit1 <- arima(lx, order=c(1,1,1), seasonal=list(order=c(0,1,1), period = 12)))
 ```
 
 Per sicurezza valutiamo anche il modello $\mathrm{ARIMA}(1,1,1)\times(1,1,1)_{12}$:
