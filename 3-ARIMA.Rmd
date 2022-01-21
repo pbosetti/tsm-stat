@@ -123,7 +123,7 @@ plot(cpmv,
 Funzioni utili per manipolare le serie temporali sono `window()` e `time()`: la prima consente di estrarre una finestra temporale tra due date, la seconda consente di estrarre il vettore dei tempi. Inoltre, sono utili le funzioni di smoothing fornite dalla libreria `zoo`
 
 ```{r warning=FALSE}
-win <- window(cpm, start=2021.5, end=end(cpm))
+win <- window(cpm, start=2021.8, end=end(cpm))
 plot(win,
      main="COVID-19 nuovi casi in Italia",
      sub="In casi giornalieri per milione di abitanti",
