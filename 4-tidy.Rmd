@@ -830,6 +830,34 @@ ctsm %>% fortify() %>%
   labs(x="Data", y="Nuovi casi", color="Classe") 
 ```
 
+Per finire, vediamo come filtrare i dati dell'oggetto `xts` originario con `ksmooth()`. Quest'ultima funzione si applica *necessariamente* su una coppia `x` e `y`, quindi la trasformazione non può purtroppo essere effettuata al volo (come `rollmedian()`) ma è necessario creare un nuovo oggetto `xts` multivariato, passando per un `data.frame`.
+
+```{r}
+ctsf <- xts(
+  data.frame(
+    new_cases = ksmooth(time(cts), coredata(cts$new_cases), 
+                        "normal", bandwidth = 7)$y,
+    new_deaths = ksmooth(time(cts), coredata(cts$new_deaths), 
+                        "normal", bandwidth = 7)$y
+  ),
+  order.by = time(cts)
+)
+coef <- 400
+deaths_color = "darkred"
+last(ctsf, "3 months") %>%
+  ggplot(mapping=aes(x=Index, y=new_cases)) +
+  geom_line() + 
+  geom_line(aes(x=Index, y=new_deaths * coef), color=deaths_color) +
+  labs(x="Data", y="Nuovi casi/giorno", title="Situazione COVID-19 in Italia") + 
+  scale_x_date(date_breaks = "7 days", labels=scales::label_date("%d %b'%y")) +
+  scale_y_continuous(
+    sec.axis=sec_axis(~./coef, name="Nuovi decessi/giorno")
+  ) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.title.y.right = element_text(color=deaths_color))
+```
+
+Questo esempio illustra anche come plottare due serie su due assi $y$ diversi (destro e sinistro).
 
 ## Diamanti grezzi!
 
