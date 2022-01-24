@@ -744,7 +744,7 @@ cts <- xts(select(covid, new_cases:icu_patients), order.by = covid$date)
 
 Una delle utili funzionalità di `xts` è quella di semplificare l'applicazione di funzioni a sotto-periodi, ad esempio per sommarizzare l'andamento settimanale (non risentendo in questo caso della periodicità settimanale dei test). In questo caso, però, l'oggetto `cts` che abbiamo creato è *multi-variato*, e le funzioni `apply.*` si applicano solo ad una colonna. Quindi bisogna procedere con alcuni accorgimenti:
 
-```{r}
+```{r warning=FALSE}
 p1 <- apply.weekly(cts$new_cases, sum) %>% ggplot(aes(x=Index, y=new_cases)) +
   geom_line() +
   labs(x="", y="Nuovi casi/sett.") +
@@ -769,8 +769,12 @@ Come si vede, si può usare `cbind` per ricostruire un `xts` dopo aver applicato
 
 In questo modo si possono realizzare anche grafici abbastanza complessi, *localizzando ad esempio l'asse dei tempi*: 
 
-```{r}
-Sys.setlocale("LC_TIME", "it_IT.UTF-8")
+```{r warning=FALSE}
+if (Sys.info()["sysname"] == "Windows") {
+  invisible(Sys.setlocale("LC_TIME", "Italian"))
+} else {
+  invisible(Sys.setlocale("LC_TIME", "it_IT.UTF-8"))
+}
 cbind(
   apply.weekly(cts$new_tests, sum),
   apply.weekly(cts$positive_rate, max)
@@ -787,7 +791,7 @@ cbind(
 
 Oltre che mediante la somma settimanale, i dati possono essere trattati anche mediante stimatori a finestra mobile di 7 giorni:
 
-```{r}
+```{r warning=FALSE}
 ctsm <- rollmedian(cts, 7) 
 ctsm %>%
   ggplot(aes(x=new_cases, y=positive_rate, color=new_tests)) +
@@ -798,14 +802,14 @@ ctsm %>%
 
 In questo caso particolare possiamo notare una clusterizzazione dei dati. Proviamo ad approfondire per capirne il motivo. Useremo la funzione base `cut` per assegnare un indice di classe in corrispondenza di un dato intervallo sul numero di test effettuati al giorno. Si noti inoltre che se vogliamo usare verbi `dplyr` su un `xts` dobbiamo prima convertirlo in data frame mediante `fortify`: mentre infatti questo passaggio è implicito in `ggplot`, non lo è nelle funzioni `dplyr`.
 
-```{r}
+```{r warning=FALSE}
 ctsm$cat <- cut(ctsm$new_tests, 
                breaks=c(0, 100, 310, 500, 5000) * 1000)
 ctsm %>% fortify() %>%
   filter(!is.na(new_tests)) %>%
   ggplot(aes(x=new_cases, y=positive_rate, color=factor(cat))) +
   geom_point(alpha=0.5) +
-  geom_smooth(method="lm") +
+  geom_smooth(formula=y~x, method="lm") +
   scale_x_continuous(labels=~.x/1000) +
   scale_color_manual(values = c(2:6)) +
   facet_wrap(~cat) +
@@ -899,7 +903,7 @@ diamonds2 <- diamonds %>%
 diamonds2 %>%
   ggplot(aes(x=lcarat, y=lprice)) +
   geom_hex(bins=50) + 
-  geom_smooth(method="lm", color="red") +
+  geom_smooth(formula=y~x, method="lm", color="red") +
   scale_fill_viridis_c()
 ```
 
