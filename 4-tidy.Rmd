@@ -832,7 +832,7 @@ ctsm %>% fortify() %>%
 
 Per finire, vediamo come filtrare i dati dell'oggetto `xts` originario con `ksmooth()`. Quest'ultima funzione si applica *necessariamente* su una coppia `x` e `y`, quindi la trasformazione non può purtroppo essere effettuata al volo (come `rollmedian()`) ma è necessario creare un nuovo oggetto `xts` multivariato, passando per un `data.frame`.
 
-```{r}
+```{r warning=FALSE}
 ctsf <- xts(
   data.frame(
     new_cases = ksmooth(time(cts), coredata(cts$new_cases), 
@@ -863,6 +863,26 @@ last(ctsf, "3 months") %>%
 ```
 
 Questo esempio illustra anche come plottare due serie su due assi $y$ diversi (destro e sinistro).
+Ancora più interessante è plottare il grafico della mortalità \footnote{Si noti che in realtà questa è un'approssimazione dell'indice di mortalità, dato che è il raporto tra nuovi casi e nuovi decessi al giorno (inoltre filtrati!), e non la probabilità di sopravvivenza!}:
+
+```{r warning=FALSE}
+coef <- 0.8E6
+ctsf %>% 
+  ggplot(aes(x=Index, y=new_deaths/new_cases)) + 
+  geom_area(fill=grey(0.8), alpha=0.5) +
+  geom_line() + 
+  geom_line(aes(x=Index, y=new_cases/coef), color=deaths_color) +
+  labs(x="Data", y="Mortalità", title="Mortalità da COVID-19 in Italia",
+       subtitle="Da inizio epidemia") +
+  scale_x_date(date_breaks = "1 month", labels=scales::label_date("%d %b'%y")) +
+  scale_y_continuous(
+    labels = scales::label_percent(),
+    sec.axis=sec_axis(~.*coef, name="Nuovi casi/giorno")
+  ) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.title.y.right = element_text(color=deaths_color))
+```
+
 
 ## Diamanti grezzi!
 
