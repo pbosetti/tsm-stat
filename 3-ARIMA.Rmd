@@ -183,11 +183,12 @@ last(cpmx, "2 week") # Ultime due settimane
 plot(first(cpmx["2021"], "2 weeks")) # Prime due settimane del 2021"
 ```
 Infine, la funzione `endpoints()` consente di identificare gli indici della serie a cui terminano specifici periodi (anno, mese, settimana, giorno...).
-Ad esempio, per selezionare i dati fino all'ultima domenica:
+Inoltre, combinazioni di `first()` e `last()` possono essere utilizzate per selezionare i dati fino all'ultima domenica:
 
 ```{r}
 invisible( # necessario, addPanel crea un nuovo grafico
-  plot(cpmx[1:(last(endpoints(cpmx, on="weeks")-1))]["2021-11/"],
+  plot(cpmx[paste0("/", index(last(first(last(cpmx, "2 weeks"), "week"))))]
+       ["2021-11/"],
      main="cpmx")
 )
 addPanel(rollmedian, k=7, on=1, col="red")
@@ -224,6 +225,13 @@ nas <- which(is.na(cpmx))
 for (i in nas) {
   cpmx[i] = median(cpmx[i-1], cpmx[i+1])
 }
+```
+
+In maniera più efficiente si possono usare le funzioni `na.locf()` o `na.approx()`: la prima sostituisce ogni `NA` con l'ultimo valore noto, la seconda lo approssima con un'interpolazione lineare (e `na.spline()` con una bicubica):
+
+```{r}
+cpmx[c(30, 213, 401)] <- NA
+cpmx <- na.locf(cpmx)
 ```
 
 Prima di qualsiasi analisi su una serie temporale è utile visualizzare il cosiddetto **lag plot**, che è un particolare grafico a dispersione in cui si confrontano i dati di una serie con gli stessi dati con un certo ritardo: se il segnale è puramente casuale, il risultato sarà una nuvola dispersa; viceversa, ogni pattern significa che i dati sono affetti da un andamento regolare. Inoltre, nel nostro caso si nota che la dispersione è molto stretta al lag 7, il che dimostra la regolarità settimanale della serie temporale.

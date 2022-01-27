@@ -195,7 +195,7 @@ data <- read.table(mydata("soap_bottles.txt"), h=T)
 knitr::kable(head(data))
 hist(data$p, probability=T,
      xlab="Riempimento (%)",
-     ylab="Frazione di sopravvissuti (%)",
+     ylab="Osservazioni",
      main="Sopravvivenza al test di caduta")
 rug(data[!data$OK,]$p, col="red")
 rug(data[data$OK,]$p, col="green")
