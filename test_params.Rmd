@@ -1,0 +1,41 @@
+---
+title: "Parametri (Stampa unione)"
+author: "Paolo Bosetti"
+date: "1/27/2022"
+output: pdf_document
+params:
+  nome: "Paolo"
+  cognome: "Bosetti"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+# Come creare report parametrici
+
+Questo documento mostra come creare report parametrici, analogamente allo strumento *stampa unione* di MS Word.
+
+Il campo `params` nell'intestazione di questo file contiene due parametri, `nome` e `cognome`, ciascuno con un valore di default. In fase di generazione del documento finale è possibile specificare il valore di questi parametri:
+
+* in RStudio, cliccando sul menu `Knit/Knit with parameters...`
+* mediante script, passando una lista di parametri all'opzione `params` della funzione `rmarkdown::render()`
+
+Nel secondo caso, si fa qualcosa del genere:
+
+```{r eval=FALSE, include=TRUE}
+rmarkdown::render(
+    "test_params.Rmd", 
+    "pdf_document",
+    output_file=glue("output.pdf"),
+    params=list(
+      nome="John", 
+      cognome="Smith"
+    )
+  )
+```
+
+Il file `stampa_unione.R` contiene un esempio di come sia possibile generare programmaticamente una serie di report parametrici a partire da una tabella di dati contenenti i parametri.
+
+In questo caso, i parametri con cui questo file è stato generato sono: **`r params$nome` `r params$cognome`**.
+
