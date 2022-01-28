@@ -30,7 +30,10 @@ header-includes:
 knitr::opts_chunk$set(
   fig.align="center", 
   fig.dim=c(7, 4), 
-  out.height="2in")
+  out.height="2in",
+  message=FALSE, 
+  warning=FALSE,
+  echo=TRUE) # impostare a FALSE per rimuovere il codice da ogni chunk nel pdf
 library(latex2exp)
 library(car)
 library(ROCR)

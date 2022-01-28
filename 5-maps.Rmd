@@ -29,7 +29,10 @@ always_allow_html: true
 knitr::opts_chunk$set(
   fig.align="center", 
   fig.dim=c(7, 4), 
-  out.height="2in")
+  out.height="2in",
+  message=FALSE, 
+  warning=FALSE,
+  echo=TRUE) # impostare a FALSE per rimuovere il codice da ogni chunk nel pdf
 library(readr)
 library(dplyr)
 library(magrittr)
@@ -53,6 +56,12 @@ library(spData)
 library(spDataLarge)
 ```
 
+**Attenzione**: per l'installazione di queste librerie si veda la nota nel file `README.md` che accompagna questo file. Inoltre, `spDataLarge` non è disponibile sulle repository CRAN, e va installata con il seguente comando in console R:
+
+```r
+install.packages("spDataLarge", repos = "https://geocompr.r-universe.dev")
+```
+
 Come in GGPlot2, e mappe si costruiscono per strati, sommando differenti contributi provenienti da oggetti `sf`. A loro volta, gli oggetti `sf` sono dei data frame che contengono dati eterogenei con l'aggiunta di *feature* geometriche:
 
 ```{r}
@@ -61,7 +70,7 @@ nz %>% str # nz è l'esempio per la Nuova Zelanda fornito da spData
 
 Plottiamo la mappa della Nuova Zelanda riempita con colori casuali generati in modo che aree adiacenti abbiano sempre colori differenti e con i bordi delle regioni interne:
 
-```{r message=FALSE, warning=FALSE}
+```{r message=FALSE, warning=FALSE, results='hide',fig.keep='all'}
 map_nz <- tm_shape(nz) + 
   tm_fill(col="MAP_COLORS") + 
   tm_borders()
@@ -77,6 +86,7 @@ qtm(nz) + qtm(nz_elev) + qtm(nz_height)
 Si possono combinare livelli *raster* con livelli vettoriali:
 
 ```{r}
+tmap_options(show.messages = F, show.warnings = F)
 map_nz1 <- map_nz +
   tm_shape(nz_elev) + tm_raster(alpha = 0.8)
 print(map_nz1)
@@ -160,7 +170,7 @@ Come si vede, ci sono 28 comuni il cui codice non trova corrispondenza nel censi
 
 Ora inseriamo questi dati su una mappa tematica, indicando l'altezza sul mare come colore e la popolazione con un diagramma a bolle:
 
-```{r}
+```{r results='hide',fig.keep='all'}
 tm_shape(tn_data) + 
   tm_borders() + 
   tm_fill(col="supcom", title="Altitudine") + 
@@ -171,7 +181,7 @@ tm_shape(tn_data) +
 
 Vogliamo ora evidenziare i comuni che stanno nel primo quartile secondo la distribuzione della superficie comunale:
 
-```{r}
+```{r results='hide',fig.keep='all'}
 inrange <- function(x, rng) x >= min(rng) & x <= max(rng)
 breaks <- quantile(tn_data$supcom)
 tm_shape(com.valle) + 
@@ -184,7 +194,7 @@ tm_shape(com.valle) +
 
 Possiamo anche colorare l'intera mappa secondo il quartile di appartenenza:
 
-```{r}
+```{r results='hide',fig.keep='all'}
 tm_shape(tn_data) + 
   tm_borders() +
   tm_fill(col="supcom", 
@@ -195,7 +205,7 @@ tm_shape(tn_data) +
 ```
 Il layer `tm_basemap()` consente di aggiungere una mappa base interattiva, scaricata dinamicamente da un provider di servizi, come Open Street Map. Perché questa funzionalità sia attiva, è necessario passare dalla modalità `"print"` (default) alla modalità `"view"`: l'oggetto grafico risultante è generato mediante JavaScript, è interattivo ma non è adatto alla stampa.
 
-```{r}
+```{r results='hide',fig.keep='all'}
 tmap_mode("view") # Per usare tm_basemap
 
 tnplus <- st_union(tn_data) %>% st_buffer(dist=2000) %>% st_cast(to="POLYGON")

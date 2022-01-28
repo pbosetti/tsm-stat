@@ -13,6 +13,27 @@ Il materiale è organizzato in notebook RStudio utilizzati per generare document
 7. Tidyverse, 4h [4-tidy.pdf](https://github.com/pbosetti/tsm-stat/raw/master/4-tidy.pdf)
 8. Mappe e GIS, 3h [5-maps.pdf](https://github.com/pbosetti/tsm-stat/raw/master/5-maps.pdf)
 
+# Note per ambiente Windows
+
+Alcune (poche) librerie di R sono disponibili in formato sorgente e devono essere compilate durante l'installazione. 
+In ambiente Windows è quindi necessario installare `Rtools`: le istruzioni si trovano su [https://cran.r-project.org/bin/windows/Rtools/rtools40.html](https://cran.r-project.org/bin/windows/Rtools/rtools40.html). Quest'installazione mette a disposizione un'ambiente di compilazione UNIX-like adatto alla compilazione automatica delle librerie disponibili solo in formato sorgente.
+
+Una volta installato `Rtools` **non è necessario** seguire le istruzioni indicate sul sito per configurare la variabile `PATH`, lo fa già l'installer.
+
+## Mappe tematiche
+
+Si noti che, in particolare, la libreria `tmap` utilizzata nella parte 5 per creare mappe tematiche richiede la versione più recente della libreria `terra`, che è disponibile solo in formato sorgente. Quindi, prima di installare `tmap` è necessario installare `Rtools` (vedi sopra) e compilare `terra` dalla console R:
+
+````r
+install.packages("terra", type = "source")
+````
+
+Inoltre, la libreria `spDataLarge` non è disponibile sulle repository CRAN, e va installata con il seguente comando in console R:
+
+```r
+install.packages("spDataLarge", repos = "https://geocompr.r-universe.dev")
+```
+
 
 # Autore
 

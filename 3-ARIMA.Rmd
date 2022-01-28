@@ -28,7 +28,13 @@ header-includes:
 
 ```{r include=FALSE}
 set.seed(123)
-knitr::opts_chunk$set(fig.align="center", fig.dim=c(6, 4), out.width="4in")
+knitr::opts_chunk$set(
+  fig.align="center", 
+  fig.dim=c(6, 4), 
+  out.width="4in",
+  message=FALSE, 
+  warning=FALSE,
+  echo=TRUE) # impostare a FALSE per rimuovere il codice da ogni chunk nel pdf
 rm(list=ls())
 library(lubridate)
 library(car)
