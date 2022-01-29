@@ -1,3 +1,8 @@
+# La variabile d'ambiente RSTUDIO_PANDOC deve essere impostata sulla base della 
+# macchina utilizzata. Per trovare il valore giusto fare 
+# Sys.getenv(RSTUDIO_PANDOC) da Rstudio (se si lancia lo script con Rscript,
+# questa variabile non è definita)
+Sys.setenv(RSTUDIO_PANDOC="/Applications/RStudio.app/Contents/MacOS/pandoc")
 library(purrr)
 library(tibble)
 library(dplyr)
