@@ -55,9 +55,10 @@ if (!file.exists(datafile) | difftime(now(),  file.mtime(datafile), units="hours
 }
 covid <- read_csv(datafile) %>% 
   filter(location==params$country) %>% 
-  select(c("date", "new_cases", "new_deaths", 
+  select(c("date", "new_cases", "new_cases_per_million", 
+           "new_deaths", "new_deaths_per_million",
            "new_tests", "people_vaccinated_per_hundred", 
-           "positive_rate", "icu_patients"))
+           "positive_rate", "population", "icu_patients"))
 cts <- xts(
   select(covid, new_cases:icu_patients), 
   order.by = covid$date
@@ -131,6 +132,8 @@ ctsf <- xts(
   data.frame(
     new_cases = ksmooth(time(cts), coredata(cts$new_cases), 
                         "normal", bandwidth = 7)$y,
+    new_cases_per_million = ksmooth(time(cts), coredata(cts$new_cases_per_million), 
+                        "normal", bandwidth = 7)$y,
     new_deaths = ksmooth(time(cts), coredata(cts$new_deaths), 
                         "normal", bandwidth = 7)$y,
     icu_patients = ksmooth(time(cts), coredata(cts$icu_patients),
@@ -184,21 +187,21 @@ last(ctsf, glue("{params$last_n_months} months")) %>%
         axis.title.y.left = element_text(color=deaths_color))
 ```
 
-Il prossimo grafico mostra invece l'evoluzione del rapporto tra nuovi casi e decessi giornalieri, un'**approssimazione** della mortalità:
+Il prossimo grafico mostra invece l'evoluzione del rapporto tra nuovi casi (per milione di abitanti) e decessi giornalieri, un'**approssimazione** della mortalità:
 
 ```{r warning=FALSE}
-coef <- 0.8E6
+coef <- 1E4
 ctsf %>% 
   ggplot(aes(x=Index, y=new_deaths/new_cases)) + 
   geom_area(fill=grey(0.8), alpha=0.5) +
   geom_line() + 
-  geom_line(aes(x=Index, y=new_cases/coef), color=deaths_color) +
+  geom_line(aes(x=Index, y=new_cases_per_million/coef), color=deaths_color) +
   labs(x="Data", y="Nuovi casi/decessi", title=glue("Rapporto nuovi casi/decessi in {params$paese}"),
        subtitle="Da inizio epidemia, dati giornalieri") +
   scale_x_date(date_breaks = "1 month", labels=scales::label_date("%d %b'%y")) +
   scale_y_continuous(
     labels = scales::label_percent(),
-    sec.axis=sec_axis(~.*coef, name="Nuovi casi")
+    sec.axis=sec_axis(~.*coef, name="Nuovi casi per milione")
   ) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
         axis.title.y.right = element_text(color=deaths_color))
