@@ -1,0 +1,236 @@
+---
+title: "Bollettino COVID-19 - `r params$paese`"
+author: "Paolo Bosetti (`paolo.bosetti@unitn.it`)"
+date: "Data creazione: `r lubridate::now()`"
+output:
+  pdf_document: 
+    keep_tex: no
+    toc: yes
+    fig_caption: yes
+    number_sections: yes
+    highlight: pygments
+    toc_depth: 4
+    extra_dependencies:
+      babel: ["italian"]
+  html_document:
+    toc: yes
+    number_sections: yes
+  documentclass: article
+  classoption: a4paper
+params:
+  country: Italy
+  paese: Italia
+  last_n_months: 3
+  pred_days: 14
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  fig.align="center", 
+  fig.dim=c(8, 4), 
+  out.height="3in",
+  echo = FALSE, 
+  warning = FALSE
+)
+library(tidyverse)
+library(xts)
+library(lubridate)
+library(cowplot)
+library(tsbox)
+library(forecast)
+library(glue)
+library(ggthemes)
+invisible(Sys.setlocale("LC_TIME", "it_IT.UTF-8"))
+```
+
+# I Dati
+
+I dati di questo bollettino sono raccolti giornalmente da [Our World in Data](https://covid.ourworldindata.org).
+
+```{r warning=FALSE, include=FALSE}
+url <- "https://covid.ourworldindata.org/data/owid-covid-data.csv"
+datafile <- basename(url)
+if (!file.exists(datafile) | difftime(now(),  file.mtime(datafile), units="hours") > 24 ) {
+  download.file(url, datafile)
+}
+covid <- read_csv(datafile) %>% 
+  filter(location==params$country) %>% 
+  select(c("date", "new_cases", "new_deaths", 
+           "new_tests", "people_vaccinated_per_hundred", 
+           "positive_rate", "icu_patients"))
+cts <- xts(
+  select(covid, new_cases:icu_patients), 
+  order.by = covid$date
+)
+```
+
+L'ultimo aggiornamento è di seguito generato il giorno `r format(now(), format="%d/%m/%Y")` con dati fino al giorno `r format(index(last(cts)), format="%d/%m/%Y")`.
+
+Vediamo prima i dati grezzi per numero di casi, numero di decessi e numero di casi in terapia intensiva giornalieri:
+
+```{r warning=FALSE}
+theme_set(theme_bw())
+p1 <- cts %>%
+  ggplot(aes(x=Index, y=new_cases)) +
+  geom_line(aes(color="Casi")) +
+  labs(x="", y="(numero/giorno)", color="Metrica") +
+  scale_x_date(date_breaks = "1 month", labels=scales::label_date("%b'%y")) + 
+  scale_y_continuous(labels = scales::label_number_si()) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))+
+  theme(legend.position="right") 
+p2 <- cts %>% 
+  ggplot() +
+  geom_line(aes(x=Index, y=new_deaths, color="Decessi")) +
+  geom_line(aes(x=Index, y=icu_patients, color="T. intensiva")) +
+  labs(x="Data", y="(numero/giorno)") +
+  scale_x_date(date_breaks = "1 month", labels=scales::label_date("%b'%y")) + 
+  scale_color_manual(name="Metrica", values=c(2,3)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  theme(legend.position="right") 
+plot_grid(p1, p2, align="v", nrow=2) 
+```
+
+# Dati filtrati
+
+Questi dati risentono della periodicità settimanale, dato che il fine settimana si raccolgono meno informazioni. Questa periodicità è evidentemente un artefatto, che possiamo mitigare con un filtro a media mobile o---meglio---con un cosiddetto *kernel smoothing*, entrambi con periodo a 7 giorni, oppure creando una serie settimanale, sommando cioè i dati giornalieri settimana per settimana.
+
+In quest'ultimo caso i grafici diventano come segue. Si noti che l'ultima settimana ovviamente sottostima l'andamento, a meno che i dati non si riferiscano alla domenica.
+
+```{r warning=FALSE}
+p1 <- apply.weekly(cts$new_cases, sum) %>% 
+  ggplot(aes(x=Index, y=new_cases, color="Casi")) +
+  geom_line() +
+  labs(x="", y="(numero/sett.)", color="Metrica") +
+  scale_x_date(date_breaks = "1 month", labels=scales::label_date("%b'%y")) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+p2 <- cbind(
+    apply.weekly(cts$new_deaths, sum),
+    apply.weekly(cts$icu_patients, sum)
+) %>% ggplot() +
+  geom_line(aes(x=Index, y=new_deaths, color="Decessi")) +
+  geom_line(aes(x=Index, y=icu_patients, color="T. intensiva")) +
+  labs(x="Data", y="(numero/sett.)", color="Metrica") +
+  scale_x_date(date_breaks = "1 month", labels=scales::label_date("%b'%y")) + 
+  scale_color_manual(values=c(2,3)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+plot_grid(p1, p2, align="v", nrow=2) 
+```
+
+
+Oltre che mediante la somma settimanale, i dati possono essere trattati anche mediante stimatori a finestra mobile di 7 giorni:
+
+```{r warning=FALSE}
+ctsm <- rollmedian(cts, 7) 
+```
+
+
+I seguenti grafici invece mantengono la periodicità giornaliera, ma applicando un *kernel smoothing*. Questi grafici **hanno il pregio di non sottostimare l'ultima settiana**:
+
+```{r warning=FALSE}
+ctsf <- xts(
+  data.frame(
+    new_cases = ksmooth(time(cts), coredata(cts$new_cases), 
+                        "normal", bandwidth = 7)$y,
+    new_deaths = ksmooth(time(cts), coredata(cts$new_deaths), 
+                        "normal", bandwidth = 7)$y,
+    icu_patients = ksmooth(time(cts), coredata(cts$icu_patients),
+                         "normal", bandwidth=7)$y
+  ),
+  order.by = time(cts)
+)
+p1 <- ctsf %>% 
+  ggplot(aes(x=Index, y=new_cases, color="Casi")) +
+  geom_line() +
+  labs(x="", y="(numero/giorno)", color="Metrica") +
+  scale_x_date(date_breaks = "1 month", labels=scales::label_date("%b'%y")) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+p2 <- ctsf %>% 
+  ggplot() +
+  geom_line(aes(x=Index, y=new_deaths, color="Decessi")) +
+  geom_line(aes(x=Index, y=icu_patients, color="T. intensiva")) +
+  labs(x="Data", y="(numero/giorno)", color="Metrica") +
+  scale_x_date(date_breaks = "1 month", labels=scales::label_date("%b'%y")) + 
+  scale_color_manual(values=c(2,3)) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+plot_grid(p1, p2, align="v", nrow=2) 
+```
+
+# Dettaglio degli ultimi `r params$last_n_months` mesi
+
+Per finire, vediamo un dettaglio dei dati dell'ultima settimana. La linea continua rossa rappresenta i nuovi casi, filtrati; quella rosso chiaro rappresenta i nuovi casi; l'area grigia rappresenta i decessi, che si leggono sull'asse destro.
+
+Si noti che i dati filtrati sono sostanzialmente una media mobile a sette giorni, e l'aumento di casi il lunedì contiene anche i mancati rilevamenti del fine settimana, quindi la media mobile è una buona approssimazione dei casi reali.
+
+```{r}
+coef <- 400
+deaths_color = "darkred"
+last(ctsf, glue("{params$last_n_months} months")) %>%
+  ggplot(mapping=aes(x=Index, y=new_cases)) +
+  geom_area(aes(x=Index, y=new_deaths * coef), fill=grey(0.8), alpha=0.5) + 
+  geom_line(aes(x=Index, y=new_deaths * coef)) +
+  geom_line(color=deaths_color) +
+  geom_line(data=last(cts, glue("{params$last_n_months} months")), 
+            aes(x=Index, y=new_cases), color=deaths_color, alpha=1/3) +
+  geom_hline(yintercept = 0) +
+  labs(x="Data", y="Nuovi casi", 
+       title=glue("Situazione COVID-19 in {params$paese}"),
+       subtitle=glue("Ultimi {params$last_n_months} mesi, dati giornalieri filtrati")) + 
+  scale_x_date(date_breaks = "7 days", labels=scales::label_date("%d %b'%y")) +
+  scale_y_continuous(
+    labels = scales::label_number_si(),
+    sec.axis=sec_axis(~./coef, name="Decessi")
+  ) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.title.y.left = element_text(color=deaths_color))
+```
+
+Il prossimo grafico mostra invece l'evoluzione del rapporto tra nuovi casi e decessi giornalieri, un'**approssimazione** della mortalità:
+
+```{r warning=FALSE}
+coef <- 0.8E6
+ctsf %>% 
+  ggplot(aes(x=Index, y=new_deaths/new_cases)) + 
+  geom_area(fill=grey(0.8), alpha=0.5) +
+  geom_line() + 
+  geom_line(aes(x=Index, y=new_cases/coef), color=deaths_color) +
+  labs(x="Data", y="Nuovi casi/decessi", title=glue("Rapporto nuovi casi/decessi in {params$paese}"),
+       subtitle="Da inizio epidemia, dati giornalieri") +
+  scale_x_date(date_breaks = "1 month", labels=scales::label_date("%d %b'%y")) +
+  scale_y_continuous(
+    labels = scales::label_percent(),
+    sec.axis=sec_axis(~.*coef, name="Nuovi casi")
+  ) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1),
+        axis.title.y.right = element_text(color=deaths_color))
+```
+
+# Predizione per i prossimi `r params$pred_days` giorni
+
+Chiudiamo con una predizione per i prossimi `r params$pred_days` giorni. Si noti che è una predizione su base puramente statistica (modello ARIMA) e non ha assolutamente nessuna base epidemiologica.
+
+```{r}
+fit <- auto.arima(ts_ts(ctsf$new_cases["2020-10-1/"]), lambda="auto")
+pred <- forecast(fit, params$pred_days, level=c(95))
+pdata <- tibble(
+  fortify(pred$mean),
+  date = as.Date(date_decimal(x)),
+  lwr = as.numeric(pred$lower),
+  upr = as.numeric(pred$upper)
+)
+
+ggplot() +
+  geom_line(data=last(ctsf, "6 weeks"), 
+            aes(x=Index, y=new_cases, color="dati storici")) +
+  geom_ribbon(data=pdata, aes(x=date, ymin=lwr, ymax=upr), fill="red", alpha=1/4) +
+  geom_line(data=pdata, aes(x=date, y=y, color="predizione")) +
+  labs(x="Data", 
+       y="Nuovi casi",
+       color="",
+       title="Predizione (modello ARIMA)", 
+       subtitle="Dati giornalieri") +
+  scale_x_date(date_breaks = "1 week", labels=scales::label_date("%d %b")) +
+  scale_y_continuous(labels = scales::label_number_si()) +
+  coord_cartesian(ylim = c(0, max(ctsf$new_cases, pdata$y, pdata$upr))) +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+

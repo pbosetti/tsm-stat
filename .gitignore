@@ -16,3 +16,6 @@ Personal
 *.log
 *.csv
 *.txt
+report_*.pdf
+COVID_report.pdf
+COVID_report.html
