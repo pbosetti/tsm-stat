@@ -216,6 +216,8 @@ Chiudiamo con una predizione per i prossimi `r params$pred_days` giorni. Si noti
 
 ```{r}
 fit <- auto.arima(ts_ts(ctsf$new_cases["2020-10-1/"]), lambda="auto")
+arima_d <- glue("ARIMA[{p},{d},{q}]",
+                p=fit$arma[1], d=fit$arma[6], q=fit$arma[2])
 pred <- forecast(fit, params$pred_days, level=c(95))
 pdata <- tibble(
   fortify(pred$mean),
@@ -232,7 +234,7 @@ ggplot() +
   labs(x="Data", 
        y="Nuovi casi",
        color="",
-       title="Predizione (modello ARIMA)", 
+       title=glue("Predizione (modello {arima_d})"), 
        subtitle="Dati giornalieri") +
   scale_x_date(date_breaks = "1 week", labels=scales::label_date("%d %b")) +
   scale_y_continuous(labels = scales::label_number_si()) +
