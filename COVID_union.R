@@ -7,6 +7,8 @@ library(purrr)
 library(tibble)
 library(dplyr)
 
+file.remove("owid-covid-data.csv")
+
 tribble(
   ~country, ~paese,
   "Italy", "Italia",
@@ -16,14 +18,20 @@ tribble(
   "Portugal", "Portogallo",
   "Austria", "Austria",
   "United Kingdom", "Regno Unito",
+  "United States", "Stati Uniti d'America",
   "World", "Mondo") %>% 
   rowwise() %>%
-  pwalk( ~ rmarkdown::render(
-    input = "COVID_report.Rmd",
-    output_format = "pdf_document",
-    output_file = paste0("report_", ..2, ".pdf"),
-    params = list(country = ..1,
-                  paese = ..2),
-    quiet = T,
-    clean = T
-  ))
+  pwalk(~ {
+    cat(paste("Creating report for", ..1, "\n"))
+    rmarkdown::render(
+      input = "COVID_report.Rmd",
+      output_format = "pdf_document",
+      output_file = paste0("report_", ..2, ".pdf"),
+      params = list(
+        country = ..1,
+        paese = ..2
+      ),
+      quiet = T,
+      clean = T
+    )
+  })
