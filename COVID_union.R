@@ -1,3 +1,4 @@
+#!/usr/local/bin/Rscript
 # La variabile d'ambiente RSTUDIO_PANDOC deve essere impostata sulla base della 
 # macchina utilizzata. Per trovare il valore giusto fare 
 # Sys.getenv(RSTUDIO_PANDOC) da Rstudio (se si lancia lo script con Rscript,

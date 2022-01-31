@@ -65,7 +65,23 @@ cts <- xts(
 )
 ```
 
-L'ultimo aggiornamento è di seguito generato il giorno `r format(now(), format="%d/%m/%Y")` con dati fino al giorno `r format(index(last(cts)), format="%d/%m/%Y")`.
+L'ultimo aggiornamento è di seguito generato il giorno `r format(now(), format="%d/%m/%Y")` con dati fino al giorno `r format(index(last(cts)), format="%d/%m/%Y")`. I dati dell'ultima settimana sono i seguenti:
+
+```{r}
+last(cts, "1 week") %>% fortify() %>% 
+  arrange(desc(Index)) %>%
+  select(Index, new_cases, new_deaths, icu_patients, positive_rate) %>%
+  mutate(positive_rate = positive_rate * 100) %>%
+  rename(
+    Data = Index,
+    Contagi = new_cases,
+    Decessi = new_deaths,
+    "Terapia intensiva" = icu_patients,
+    "Positivi (%)" = positive_rate
+  ) %>%
+  knitr::kable()
+```
+
 
 Vediamo prima i dati grezzi per numero di casi, numero di decessi e numero di casi in terapia intensiva giornalieri:
 
@@ -199,7 +215,7 @@ cbind(
   geom_area(fill=grey(0.8), alpha=0.5) +
   geom_line() + 
   geom_line(data=ctsf, aes(x=Index, y=new_cases_per_million/coef), color=deaths_color) +
-  labs(x="Data", y="Nuovi casi/decessi", title=glue("Rapporto nuovi casi/decessi in {params$paese}"),
+  labs(x="Data", y="Decessi/Nuovi casi", title=glue("Rapporto decessi/nuovi casi in {params$paese}"),
        subtitle="Da inizio epidemia, dati giornalieri") +
   scale_x_date(date_breaks = "1 month", labels=scales::label_date("%d %b'%y")) +
   scale_y_continuous(
