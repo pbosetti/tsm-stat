@@ -583,21 +583,57 @@ gp %>% ggMarginal(type="histogram", fill="lightgray")
 
 ### Diagramma di Pareto
 
+Creiamo un diagramma di Pareto a partire dai dati estesi, ossia raggruppando dati puntuali in classi. In particolare, usiamo le funzioni `dplyr::ntile()` per creare un certo numero (10) di classi equi-popolate, e usiamo invece `cut()` per definire classi basate su intervalli arbitrari.
+
 ```{r}
-set.seed((123))
-tibble(
-  Categoria=LETTERS[1:10], 
-  Conteggio=sort(exp(rnorm(10, 5, 1.5)), decreasing=T), 
-  Parziali=cumsum(Conteggio)
-) %>%
-  ggplot(aes(x=Categoria)) + 
-  geom_bar(aes(y=Conteggio, fill=Parziali), stat="identity") + 
-  geom_point(aes(y=Parziali)) + 
-  geom_line(aes(y=Parziali, group=1)) + 
-  geom_label_repel(aes(y=Parziali, label=paste0(round(Parziali/sum(Conteggio)*100), "%")),
-                   nudge_x=-0.5, nudge_y=250, size=3) + 
-  scale_fill_viridis_b()
+set.seed(123)
+theme_set(theme_bw())
+nc <- 10
+pop <- tibble(
+  c = rbeta(100, 1, 500)*10000,
+  i = seq_along(c)
+) %>% 
+  relocate(i, .before = c) %>%
+  mutate(
+    qclass = ntile(c, nc),
+    class = cut(c, breaks=c(0, 25, 50, 60, Inf))) %>%
+  arrange(qclass, c)
+str(pop)
 ```
+
+Ora visualizziamo i dati come grafico a dispersione, colorando i punti secondo la classe quantile e con forma secondo la classe arbitraria:
+
+```{r}
+pop %>% ggplot() +
+  geom_point(aes(x = i, y=c, color = qclass, shape = class), 
+             size = 3, alpha =3/4) + 
+  scale_shape(name = "Classe arbitraria") +
+  scale_color_viridis_b(option = "A", breaks = 1:nc, name = "Classe quantile") +
+  labs(x = "Indice", y = "Valore")
+```
+Infine, raggruppiamo i dati per classe e calcoliamo la somma per classe; calcoliamo anche la somma cumulativa (ma in ordine inverso, dalla classe con somma più grande a discendere):
+
+```{r}
+pop %>% 
+  group_by(qclass) %>%
+  summarise(n = n(), sum = sum(c), min = min(c), max = max(c)) %>%
+  mutate(ord = rev(seq_along(qclass))) %>%
+  arrange(ord) %>%
+  mutate(cum = cumsum(sum)) %>%
+  ggplot(aes(x = ord, y = sum)) +
+  geom_bar(aes(fill = sum), stat="identity") +
+  geom_line(aes(y = cum)) + 
+  geom_point(aes(y = cum)) +
+  geom_label_repel(aes(y = cum, 
+                       label = paste0(round(cum/sum(sum)*100), "%")),
+                   nudge_x = -0.5, 
+                   nudge_y = 250, 
+                   size = 3) + 
+  scale_x_continuous(breaks = 1:nc, labels = ~paste0(.x/nc*100, "%")) +
+  scale_fill_viridis_b(name = "Parziali") +
+  labs(x = "Frazione della popolazione", y = "Parziali")
+```
+Le prime 4 classi, che raccolgono il 40% della popolazione, contribuiscono per il 76% del valore complessivo.
 
 ## Modelli
 

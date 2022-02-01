@@ -65,10 +65,10 @@ cts <- xts(
 )
 ```
 
-L'ultimo aggiornamento è di seguito generato il giorno `r format(now(), format="%d/%m/%Y")` con dati fino al giorno `r format(index(last(cts)), format="%d/%m/%Y")`. I dati dell'ultima settimana sono i seguenti:
+L'ultimo aggiornamento è di seguito generato il giorno `r format(now(), format="%d/%m/%Y")` con dati fino al giorno `r format(index(last(cts)), format="%d/%m/%Y")`. I dati degli ultimi sette giorni sono i seguenti:
 
 ```{r}
-last(cts, "1 week") %>% fortify() %>% 
+last(cts, "7 days") %>% fortify() %>% 
   arrange(desc(Index)) %>%
   select(Index, new_cases, new_deaths, icu_patients, positive_rate) %>%
   mutate(positive_rate = positive_rate * 100) %>%
@@ -176,7 +176,7 @@ plot_grid(p1, p2, align="v", nrow=2)
 
 # Dettaglio degli ultimi `r params$last_n_months` mesi
 
-Per finire, vediamo un dettaglio dei dati dell'ultima settimana. La linea continua rossa rappresenta i nuovi casi, filtrati; quella rosso chiaro rappresenta i nuovi casi; l'area grigia rappresenta i decessi, che si leggono sull'asse destro.
+Per finire, vediamo un dettaglio dei dati degli ultimi `r params$last_n_months` mesi. La linea continua rossa rappresenta i nuovi casi, filtrati; quella rosso chiaro rappresenta i nuovi casi; l'area grigia rappresenta i decessi, che si leggono sull'asse destro.
 
 Si noti che i dati filtrati sono sostanzialmente una media mobile a sette giorni, e l'aumento di casi il lunedì contiene anche i mancati rilevamenti del fine settimana, quindi la media mobile è una buona approssimazione dei casi reali.
 
