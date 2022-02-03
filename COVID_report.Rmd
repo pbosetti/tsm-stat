@@ -258,7 +258,10 @@ ggplot() +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-```{r child='COVID_detail_it.Rmd', eval = params$country == "Italy"}
-# Questo blocco viene inserito solo per l'Italia e carica il file separato
+```{r}
+# Il blocco seguente viene inserito solo per l'Italia e carica il file separato
 # COVID_detail_it.Rmd
+```
+
+```{r child='COVID_detail_it.Rmd', eval = params$country == "Italy"}
 ```

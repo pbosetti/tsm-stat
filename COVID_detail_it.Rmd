@@ -58,6 +58,13 @@ sit_7 <- ita %>%
   summarise(sum_c=sum(cases_new), sum_d=sum(deaths_new))
 
 # Mappa tematica italiana
+shapefile <- "data/ITA_adm1.shp"
+if (!file.exists(shapefile)) {
+  zipfile <- "data.zip"
+  download.file("https://stacks.stanford.edu/file/druid:bb489fv3314/data.zip", zipfile)
+  unzip(zipfile, exdir="data")
+  file.remove(zipfile)
+}
 italy <- read_sf("data/ITA_adm1.shp")
 # Semplifico la mappa per velocizzare il plottaggio (tengo il 10% dei punti)
 italy <- rmapshaper::ms_simplify(italy, keep=0.1)
@@ -86,22 +93,22 @@ italy <- italy %>%
 it_map <- tm_shape(italy) +
   tm_borders() 
 m1 <- it_map +
-  tm_fill(col="sum_c") +
+  tm_fill(col="sum_c", title="Numero") +
   tm_layout(frame=F,
-            legend.position = c("left", "bottom"),
             title="Contagi settimanali", 
+            legend.position = c("left", "bottom"),
             legend.format = list(text.separator="-"))
 m2 <- it_map +
-  tm_fill(col="sum_d") +
+  tm_fill(col="sum_d", title="Numero") +
   tm_layout(frame=F,
-            legend.position = c("left", "bottom"),
             title="Decessi settimanali", 
+            legend.position = c("left", "bottom"),
             legend.format = list(text.separator="-"))
 m3 <- it_map +
-  tm_fill(col="sum_c_pt") +
+  tm_fill(col="sum_c_pt", title="Numero/1000") +
   tm_layout(frame=F,
-            legend.position = c("left", "bottom"),
             title="Contagi sett./1000", 
+            legend.position = c("left", "bottom"),
             legend.format = list(text.separator="-"))
 tmap_arrange(m1, m3, m2)
 ```
