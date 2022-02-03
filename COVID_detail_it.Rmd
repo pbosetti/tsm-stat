@@ -4,12 +4,13 @@
 library(covidregionaldata)
 library(tmap)
 library(sf)
-regions <- c("Trentino-Alto Adige", "Veneto", "Lombardia")
+library(readr)
+regions <- c("Trentino-Alto Adige", "Veneto", "Lombardia", "Friuli Venezia Giulia", "Emilia-Romagna")
 ```
 
 ## Serie storica
 
-Di seguito le serie storiche filtrate per le regioni `r regions`.
+Di seguito le serie storiche per le regioni `r regions` per gli ultimi 6 mesi. Tutti i dati riportati di seguito sono filtrati con un *kernel smoothing* a 7 giorni per compensare gli effetti dei ritardi settimanali.
 
 ```{r message=FALSE, warning=FALSE}
 ita <- get_regional_data("italy") %>% 
@@ -23,39 +24,69 @@ ita_f <- ita %>%
     cases_new = ksmooth(date, cases_new, "normal", bandwidth=7)$y,
     deaths_new = ksmooth(date, deaths_new, "normal", bandwidth=7)$y)
 
+# Popolazione estratta da censimento 2011
+pop_regioni <- read_csv("pop_regioni.csv", 
+    col_types = cols(Popolazione = col_double(), 
+        Superficie = col_double(), Densità = col_double(), 
+        N_comuni = col_integer(), N_provincie = col_integer()))
+
+ita_f <- ita_f %>%
+  left_join(pop_regioni, by=c("region"="Regione")) %>%
+  mutate(cases_new_pt = cases_new/Popolazione*1000,
+         deaths_new_pt = deaths_new/Popolazione*1000)
+  
 # Seleziono regioni
 ita_f_sel <- ita_f %>%
-  filter(region %in% regions) 
+  filter(region %in% regions,
+         date > today() - months(6))
 
 # Plotto contagi
 ita_f_sel %>%
-  ggplot(aes(x=date, y=cases_new, color=region)) + 
+  ggplot(aes(x=date, y=cases_new_pt, color=region)) + 
   geom_line() +
-  labs(x = "Data", y="Nuovi contagi", color="Regione") +
+  labs(x = "Data", y="Nuovi contagi per mille abitanti", color="Regione") +
   scale_x_date(date_breaks = "1 month", labels=scales::label_date("%d %b")) +
-  scale_y_continuous(labels = scales::label_number_si()) +
+  scale_y_continuous(labels = scales::label_number())  +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 
 # Plotto decessi
 ita_f_sel %>%
-  ggplot(aes(x=date, y=deaths_new, color=region)) + 
+  ggplot(aes(x=date, y=deaths_new_pt, color=region)) + 
   geom_line() +
-  labs(x = "Data", y="Decessi", color="Regione") +
+  labs(x = "Data", y="Decessi per mille abitanti", color="Regione") +
   scale_x_date(date_breaks = "1 month", labels=scales::label_date("%d %b")) +
-  scale_y_continuous(labels = scales::label_number_si()) +
+  scale_y_continuous(labels = scales::label_number()) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
-```
 
-## Mappa regionale
+# Dati degli ultimi 7 giorni
+sit_7 <- ita_f %>%
+  group_by(region) %>%
+  slice_tail(n=7) %>%
+  summarise(
+    sum_c = sum(cases_new), 
+    sum_d = sum(deaths_new),
+    sum_c_pt = sum(cases_new_pt),
+    sum_d_pt = sum(deaths_new_pt))
+```
+## Situazione attuale
+
+La seguente tabella riporta i dati medi degli ultimi 7 giorni, in ordine decrescente di numero di casi per 1000 abitanti:
+
+```{r}
+sit_7 %>% 
+  transmute("Regione" = region,
+         "Contagi" = round(sum_c),
+         "Decessi" = round(sum_d),
+         "Contagi/1000" = round(sum_c_pt, 1),
+         "Decessi/1000" = round(sum_d_pt, 3)
+         ) %>%
+  arrange(desc(`Contagi/1000`)) %>%
+  knitr::kable()
+```
 
 I seguenti dati rappresentano il numero di contagi  e dei decessi degli ultimi 7 giorni, regione per regione.
 
 ```{r message=FALSE, warning=FALSE}
-# Dati degli ultimi 7 giorni
-sit_7 <- ita %>%
-  group_by(region) %>%
-  slice_tail(n=7) %>%
-  summarise(sum_c=sum(cases_new), sum_d=sum(deaths_new))
 
 # Mappa tematica italiana
 shapefile <- "data/ITA_adm1.shp"
@@ -71,13 +102,6 @@ italy <- rmapshaper::ms_simplify(italy, keep=0.1)
 italy$NAME_1[italy$NAME_1 == "Apulia"] <- "Puglia"
 italy$NAME_1[italy$NAME_1 == "Friuli-Venezia Giulia"] <- "Friuli Venezia Giulia"
 italy$NAME_1[italy$NAME_1 == "Sicily"] <- "Sicilia"
-
-# Popolazione estratta da censimento 2011
-library(readr)
-pop_regioni <- read_csv("pop_regioni.csv", 
-    col_types = cols(Popolazione = col_double(), 
-        Superficie = col_double(), Densità = col_double(), 
-        N_comuni = col_integer(), N_provincie = col_integer()))
 
 # Unisco le tabelle
 italy <- italy %>% 

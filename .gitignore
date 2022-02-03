@@ -20,4 +20,8 @@ report_*.pdf
 COVID_report.pdf
 COVID_report.html
 !pop_regioni.csv
-reports
+/reports
+/data
+Parte*
+/Test
+
