@@ -19,3 +19,5 @@ Personal
 report_*.pdf
 COVID_report.pdf
 COVID_report.html
+!pop_regioni.csv
+reports

@@ -13,6 +13,12 @@ Il materiale è organizzato in notebook RStudio utilizzati per generare document
 7. Tidyverse, 4h [4-tidy.pdf](https://github.com/pbosetti/tsm-stat/raw/master/4-tidy.pdf)
 8. Mappe e GIS, 3h [5-maps.pdf](https://github.com/pbosetti/tsm-stat/raw/master/5-maps.pdf)
 
+## Esempio di reportistica automatica
+
+I file `COVID_union.R`, `COVID_report.Rmd` e `COVID_detail_it.Rmd` consentono di creare una serie di report automatici sulla situazione epidemica in alcuni stati selezionati e con un dettaglio sulle regioni italiane.
+
+Il primo file è lo script che, a partire dal secondo, genera automaticamente i report, cambiando di volta in volta il parametro `params$country`. Il terzo file viene incluso nel secondo solo se il report riguarda l'Italia, e comprende l'analisi dei dati regione per regione.
+
 # Note per ambiente Windows
 
 Alcune (poche) librerie di R sono disponibili in formato sorgente e devono essere compilate durante l'installazione. 
