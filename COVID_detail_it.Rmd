@@ -94,7 +94,7 @@ if (!file.exists(shapefile)) {
   zipfile <- "data.zip"
   download.file("https://stacks.stanford.edu/file/druid:bb489fv3314/data.zip", zipfile)
   unzip(zipfile, exdir="data")
-  file.remove(zipfile)
+  invisible(file.remove(zipfile))
 }
 italy <- read_sf("data/ITA_adm1.shp")
 # Semplifico la mappa per velocizzare il plottaggio (tengo il 10% dei punti)
