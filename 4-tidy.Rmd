@@ -833,7 +833,7 @@ Oltre che mediante la somma settimanale, i dati possono essere trattati anche me
 ```{r warning=FALSE}
 ctsm <- rollmedian(cts, 7) 
 ctsm %>%
-  ggplot(aes(x=new_cases, y=positive_rate, color=new_tests)) +
+  ggplot(aes(x=new_cases, y=positive_rate*100, color=new_tests)) +
   geom_point(alpha=0.5) +
   scale_color_viridis_b() +
   labs(x="Nuovi casi", y="Positivi (%)", color="Nuovi test")
