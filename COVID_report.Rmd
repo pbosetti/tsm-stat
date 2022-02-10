@@ -174,6 +174,17 @@ p2 <- ctsf %>%
 plot_grid(p1, p2, align="v", nrow=2) 
 ```
 
+```{r}
+diff(ctsf) %>% 
+  ggplot(aes(x=Index, y=new_cases)) +
+  geom_area(alpha=1/2) +
+  geom_line() +
+  labs(x="", y="Variazione giornaliera (numero/giorno/giorno)") +
+  scale_x_date(date_breaks = "1 month", labels=scales::label_date("%b'%y")) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+```
+
+
 # Dettaglio degli ultimi `r params$last_n_months` mesi
 
 Per finire, vediamo un dettaglio dei dati degli ultimi `r params$last_n_months` mesi. La linea continua rossa rappresenta i nuovi casi, filtrati; quella rosso chiaro rappresenta i nuovi casi; l'area grigia rappresenta i decessi, che si leggono sull'asse destro.
@@ -201,6 +212,17 @@ last(ctsf, glue("{params$last_n_months} months")) %>%
   ) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
         axis.title.y.left = element_text(color=deaths_color))
+```
+Il prossimo grafico mostra il _rateo di variazione dei contagi_: positiva significa che i contagi aumentano, negativa che diminuiscono.
+
+```{r}
+diff(last(ctsf, glue("{params$last_n_months} months"))) %>% 
+  ggplot(aes(x=Index, y=new_cases)) +
+  geom_area(alpha=1/2) +
+  geom_line() +
+  labs(x="", y="Rateo di variazione (numero/giorno/giorno)") +
+  scale_x_date(date_breaks = "1 week", labels=scales::label_date("%d %b'%y")) + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
 Il prossimo grafico mostra invece l'evoluzione del rapporto tra nuovi casi (per milione di abitanti) e decessi giornalieri, un'**approssimazione** della mortalità:

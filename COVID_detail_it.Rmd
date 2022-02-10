@@ -33,7 +33,7 @@ pop_regioni <- read_csv("pop_regioni.csv",
 ita_f <- ita_f %>%
   left_join(pop_regioni, by=c("region"="Regione")) %>%
   mutate(cases_new_pt = cases_new/Popolazione*1000,
-         deaths_new_pt = deaths_new/Popolazione*1000)
+         deaths_new_pm = deaths_new/Popolazione*1000000)
   
 # Seleziono regioni
 ita_f_sel <- ita_f %>%
@@ -51,9 +51,9 @@ ita_f_sel %>%
 
 # Plotto decessi
 ita_f_sel %>%
-  ggplot(aes(x=date, y=deaths_new_pt, color=region)) + 
+  ggplot(aes(x=date, y=deaths_new_pm, color=region)) + 
   geom_line() +
-  labs(x = "Data", y="Decessi per mille abitanti", color="Regione") +
+  labs(x = "Data", y="Decessi per milione di abitanti", color="Regione") +
   scale_x_date(date_breaks = "1 month", labels=scales::label_date("%d %b")) +
   scale_y_continuous(labels = scales::label_number()) +
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
@@ -66,7 +66,7 @@ sit_7 <- ita_f %>%
     sum_c = sum(cases_new), 
     sum_d = sum(deaths_new),
     sum_c_pt = sum(cases_new_pt),
-    sum_d_pt = sum(deaths_new_pt))
+    sum_d_pm = sum(deaths_new_pm))
 ```
 ## Situazione attuale
 
@@ -78,7 +78,7 @@ sit_7 %>%
          "Contagi" = round(sum_c),
          "Decessi" = round(sum_d),
          "Contagi/1000" = round(sum_c_pt, 1),
-         "Decessi/1000" = round(sum_d_pt, 3)
+         "Decessi/milione" = round(sum_d_pm, 1)
          ) %>%
   arrange(desc(`Contagi/1000`)) %>%
   knitr::kable()
@@ -107,7 +107,7 @@ italy$NAME_1[italy$NAME_1 == "Sicily"] <- "Sicilia"
 italy <- italy %>% 
   left_join(sit_7, by=c("NAME_1"="region")) %>% 
   left_join(pop_regioni, by=c("NAME_1"="Regione")) %>%
-  mutate(sum_c_pt=sum_c/Popolazione*1000) %>%
+  # mutate(sum_c_pt=sum_c/Popolazione*1000) %>%
   relocate(sum_c, sum_d, Popolazione, .after="NAME_1")
 ```
 
@@ -119,21 +119,29 @@ it_map <- tm_shape(italy) +
 m1 <- it_map +
   tm_fill(col="sum_c", title="Numero") +
   tm_layout(frame=F,
-            title="Contagi settimanali", 
+            main.title="Contagi settimanali", 
             legend.position = c("left", "bottom"),
             legend.format = list(text.separator="-"))
 m2 <- it_map +
-  tm_fill(col="sum_d", title="Numero") +
-  tm_layout(frame=F,
-            title="Decessi settimanali", 
-            legend.position = c("left", "bottom"),
-            legend.format = list(text.separator="-"))
-m3 <- it_map +
   tm_fill(col="sum_c_pt", title="Numero/1000") +
   tm_layout(frame=F,
-            title="Contagi sett./1000", 
+            main.title="Contagi sett./1000", 
             legend.position = c("left", "bottom"),
             legend.format = list(text.separator="-"))
-tmap_arrange(m1, m3, m2)
+# tmap_arrange(m1, m2)
+m3 <- it_map +
+  tm_fill(col="sum_d", title="Numero") +
+  tm_layout(frame=F,
+            main.title="Decessi settimanali", 
+            legend.position = c("left", "bottom"),
+            legend.format = list(text.separator="-"))
+m4 <- it_map +
+  tm_fill(col="sum_d_pm", title="Numero") +
+  tm_layout(frame=F,
+            main.title="Decessi settimanali/milione", 
+            main.title.position = "right",
+            legend.position = c("left", "bottom"),
+            legend.format = list(text.separator="-"))
+tmap_arrange(m1, m2, m3, m4)
 ```
 
