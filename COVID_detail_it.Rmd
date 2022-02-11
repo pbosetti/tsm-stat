@@ -119,27 +119,30 @@ it_map <- tm_shape(italy) +
 m1 <- it_map +
   tm_fill(col="sum_c", title="Numero") +
   tm_layout(frame=F,
-            main.title="Contagi settimanali", 
+            title="Contagi settimanali",
+            title.size = 1, 
             legend.position = c("left", "bottom"),
             legend.format = list(text.separator="-"))
 m2 <- it_map +
   tm_fill(col="sum_c_pt", title="Numero/1000") +
   tm_layout(frame=F,
-            main.title="Contagi sett./1000", 
+            title="Contagi sett./1000",
+            title.size = 1, 
             legend.position = c("left", "bottom"),
             legend.format = list(text.separator="-"))
 # tmap_arrange(m1, m2)
 m3 <- it_map +
   tm_fill(col="sum_d", title="Numero") +
   tm_layout(frame=F,
-            main.title="Decessi settimanali", 
+            title="Decessi settimanali",
+            title.size = 1, 
             legend.position = c("left", "bottom"),
             legend.format = list(text.separator="-"))
 m4 <- it_map +
   tm_fill(col="sum_d_pm", title="Numero") +
   tm_layout(frame=F,
-            main.title="Decessi settimanali/milione", 
-            main.title.position = "right",
+            title="Decessi sett./milione", 
+            title.size = 1,
             legend.position = c("left", "bottom"),
             legend.format = list(text.separator="-"))
 tmap_arrange(m1, m2, m3, m4)
