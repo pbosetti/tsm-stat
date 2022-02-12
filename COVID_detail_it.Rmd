@@ -84,11 +84,11 @@ sit_7 %>%
   knitr::kable()
 ```
 
-I seguenti dati rappresentano il numero di contagi  e dei decessi degli ultimi 7 giorni, regione per regione.
+I seguenti dati rappresentano il numero di contagi  e dei decessi degli ultimi 7 giorni, regione per regione, in mappe coropletiche.
 
 ```{r message=FALSE, warning=FALSE}
 
-# Mappa tematica italiana
+# Mappa coropletica italiana
 shapefile <- "data/ITA_adm1.shp"
 if (!file.exists(shapefile)) {
   zipfile <- "data.zip"
