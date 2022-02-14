@@ -18,8 +18,8 @@ output:
   documentclass: article
   classoption: a4paper
 params:
-  country: Italy
-  paese: Italia
+  country: Spain
+  paese: Spagna
   last_n_months: 3
   pred_days: 14
 ---
@@ -290,8 +290,8 @@ intervallo seriale medio pari a `r si_mean` giorni, con deviazione standard `r s
 <https://www.medrxiv.org/content/10.1101/2021.12.25.21268301v1.full.pdf>).
 
 ```{r message=FALSE, warning=FALSE, include=FALSE}
-rt <- data.frame(dates=time(last_ctsf),
-                 I=as.vector(coredata(last_ctsf$new_cases))) %>%
+rt <- data.frame(dates=time(last_ctsf[!is.na(last_ctsf$new_cases)]),
+                 I=as.vector(coredata(last_ctsf[!is.na(last_ctsf$new_cases)]$new_cases))) %>%
   estimate_R(method="parametric_si", 
              config=make_config(list(mean_si=2.22, std_si=1.62))) %>%
   invisible()
