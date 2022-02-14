@@ -40,12 +40,14 @@ library(tsbox)
 library(forecast)
 library(glue)
 library(ggthemes)
+library(EpiEstim)
 invisible(Sys.setlocale("LC_TIME", "it_IT.UTF-8"))
 ```
 
 # I Dati
 
-I dati di questo bollettino sono raccolti giornalmente da [Our World in Data](https://covid.ourworldindata.org).
+I dati di questo bollettino sono raccolti giornalmente da [Our World in
+Data](https://covid.ourworldindata.org).
 
 ```{r warning=FALSE, include=FALSE}
 url <- "https://covid.ourworldindata.org/data/owid-covid-data.csv"
@@ -65,7 +67,10 @@ cts <- xts(
 )
 ```
 
-L'ultimo aggiornamento è di seguito generato il giorno `r format(now(), format="%d/%m/%Y")` con dati fino al giorno `r format(index(last(cts)), format="%d/%m/%Y")`. I dati degli ultimi sette giorni sono i seguenti:
+L'ultimo aggiornamento è di seguito generato il giorno
+`r format(now(), format="%d/%m/%Y")` con dati fino al giorno
+`r format(index(last(cts)), format="%d/%m/%Y")`. I dati degli ultimi
+sette giorni sono i seguenti:
 
 ```{r}
 last(cts, "7 days") %>% fortify() %>% 
@@ -82,8 +87,8 @@ last(cts, "7 days") %>% fortify() %>%
   knitr::kable()
 ```
 
-
-Vediamo prima i dati grezzi per numero di casi, numero di decessi e numero di casi in terapia intensiva giornalieri:
+Vediamo prima i dati grezzi per numero di casi, numero di decessi e
+numero di casi in terapia intensiva giornalieri:
 
 ```{r warning=FALSE}
 theme_set(theme_bw())
@@ -109,9 +114,16 @@ plot_grid(p1, p2, align="v", nrow=2)
 
 # Dati filtrati
 
-Questi dati risentono della periodicità settimanale, dato che il fine settimana si raccolgono meno informazioni. Questa periodicità è evidentemente un artefatto, che possiamo mitigare con un filtro a media mobile o---meglio---con un cosiddetto *kernel smoothing*, entrambi con periodo a 7 giorni, oppure creando una serie settimanale, sommando cioè i dati giornalieri settimana per settimana.
+Questi dati risentono della periodicità settimanale, dato che il fine
+settimana si raccolgono meno informazioni. Questa periodicità è
+evidentemente un artefatto, che possiamo mitigare con un filtro a media
+mobile o---meglio---con un cosiddetto *kernel smoothing*, entrambi con
+periodo a 7 giorni, oppure creando una serie settimanale, sommando cioè
+i dati giornalieri settimana per settimana.
 
-In quest'ultimo caso i grafici diventano come segue. Si noti che l'ultima settimana ovviamente sottostima l'andamento, a meno che i dati non si riferiscano alla domenica.
+In quest'ultimo caso i grafici diventano come segue. Si noti che
+l'ultima settimana ovviamente sottostima l'andamento, a meno che i dati
+non si riferiscano alla domenica.
 
 ```{r warning=FALSE}
 p1 <- apply.weekly(cts$new_cases, sum) %>% 
@@ -133,15 +145,16 @@ p2 <- cbind(
 plot_grid(p1, p2, align="v", nrow=2) 
 ```
 
-
-Oltre che mediante la somma settimanale, i dati possono essere trattati anche mediante stimatori a finestra mobile di 7 giorni:
+Oltre che mediante la somma settimanale, i dati possono essere trattati
+anche mediante stimatori a finestra mobile di 7 giorni:
 
 ```{r warning=FALSE}
 ctsm <- rollmedian(cts, 7) 
 ```
 
-
-I seguenti grafici invece mantengono la periodicità giornaliera, ma applicando un *kernel smoothing*. Questi grafici **hanno il pregio di non sottostimare l'ultima settiana**:
+I seguenti grafici invece mantengono la periodicità giornaliera, ma
+applicando un *kernel smoothing*. Questi grafici **hanno il pregio di
+non sottostimare l'ultima settiana**:
 
 ```{r warning=FALSE}
 ctsf <- xts(
@@ -184,17 +197,28 @@ diff(ctsf) %>%
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-
 # Dettaglio degli ultimi `r params$last_n_months` mesi
 
-Per finire, vediamo un dettaglio dei dati degli ultimi `r params$last_n_months` mesi. La linea continua rossa rappresenta i nuovi casi, filtrati; quella rosso chiaro rappresenta i nuovi casi; l'area grigia rappresenta i decessi, che si leggono sull'asse destro.
+```{r}
+last_ctsf <- last(ctsf, glue("{params$last_n_months} months")) 
+```
 
-Si noti che i dati filtrati sono sostanzialmente una media mobile a sette giorni, e l'aumento di casi il lunedì contiene anche i mancati rilevamenti del fine settimana, quindi la media mobile è una buona approssimazione dei casi reali.
+## Situazione
+
+Per finire, vediamo un dettaglio dei dati degli ultimi
+`r params$last_n_months` mesi. La linea continua rossa rappresenta i
+nuovi casi, filtrati; quella rosso chiaro rappresenta i nuovi casi;
+l'area grigia rappresenta i decessi, che si leggono sull'asse destro.
+
+Si noti che i dati filtrati sono sostanzialmente una media mobile a
+sette giorni, e l'aumento di casi il lunedì contiene anche i mancati
+rilevamenti del fine settimana, quindi la media mobile è una buona
+approssimazione dei casi reali.
 
 ```{r}
 coef <- 400
 deaths_color = "darkred"
-last(ctsf, glue("{params$last_n_months} months")) %>%
+last_ctsf %>%
   ggplot(mapping=aes(x=Index, y=new_cases)) +
   geom_area(aes(x=Index, y=new_deaths * coef), fill=grey(0.8), alpha=0.5) + 
   geom_line(aes(x=Index, y=new_deaths * coef)) +
@@ -213,10 +237,14 @@ last(ctsf, glue("{params$last_n_months} months")) %>%
   theme(axis.text.x = element_text(angle = 45, hjust = 1),
         axis.title.y.left = element_text(color=deaths_color))
 ```
-Il prossimo grafico mostra il _rateo di variazione dei contagi_: positiva significa che i contagi aumentano, negativa che diminuiscono.
+
+## Rateo di variazione dei contagi
+
+Il prossimo grafico mostra il *rateo di variazione dei contagi*:
+positiva significa che i contagi aumentano, negativa che diminuiscono.
 
 ```{r}
-diff(last(ctsf, glue("{params$last_n_months} months"))) %>% 
+diff(last_ctsf) %>% 
   ggplot(aes(x=Index, y=new_cases)) +
   geom_area(alpha=1/2) +
   geom_line() +
@@ -225,7 +253,9 @@ diff(last(ctsf, glue("{params$last_n_months} months"))) %>%
   theme(axis.text.x = element_text(angle = 45, hjust = 1))
 ```
 
-Il prossimo grafico mostra invece l'evoluzione del rapporto tra nuovi casi (per milione di abitanti) e decessi giornalieri, un'**approssimazione** della mortalità:
+Il prossimo grafico mostra invece l'evoluzione del rapporto tra nuovi
+casi (per milione di abitanti) e decessi giornalieri,
+un'**approssimazione** della mortalità:
 
 ```{r warning=FALSE}
 coef <- 1E4
@@ -248,9 +278,41 @@ cbind(
         axis.title.y.right = element_text(color=deaths_color))
 ```
 
+## Calcolo di $R_t$
+
+```{r}
+si_mean <- 2.22
+si_sd <- 1.62
+```
+
+Segue il calcolo del $R_t$, calcolato con metodo parametrico e
+intervallo seriale medio pari a `r si_mean` giorni, con deviazione standard `r si_sd` (dati per variante omicron di SARS-CoV2, vedi
+<https://www.medrxiv.org/content/10.1101/2021.12.25.21268301v1.full.pdf>).
+
+```{r message=FALSE, warning=FALSE, include=FALSE}
+rt <- data.frame(dates=time(last_ctsf),
+                 I=as.vector(coredata(last_ctsf$new_cases))) %>%
+  estimate_R(method="parametric_si", 
+             config=make_config(list(mean_si=2.22, std_si=1.62))) %>%
+  invisible()
+```
+
+
+```{r}
+suppressMessages(
+  plot(rt, "R", options_R=list(transp=0.5), legend=F) +
+    labs(x="Data", title="") +
+    scale_x_date(date_breaks = "1 week", labels=scales::label_date("%d %b'%y")) + 
+    theme(axis.text.x = element_text(angle = 45, hjust = 1))
+)
+```
+
 # Predizione per i prossimi `r params$pred_days` giorni
 
-Chiudiamo con una predizione per i prossimi `r params$pred_days` giorni. Si noti che è una predizione su base puramente statistica (modello ARIMA) e non ha assolutamente nessuna base epidemiologica. In rosso è riportato l'intervallo di confidenza al 95%.
+Chiudiamo con una predizione per i prossimi `r params$pred_days` giorni.
+Si noti che è una predizione su base puramente statistica (modello
+ARIMA) e non ha assolutamente nessuna base epidemiologica. In rosso è
+riportato l'intervallo di confidenza al 95%.
 
 ```{r}
 fit <- auto.arima(ts_ts(ctsf$new_cases["2020-10-1/"]), lambda="auto")
